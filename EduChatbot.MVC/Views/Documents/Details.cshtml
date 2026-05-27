@@ -1,0 +1,57 @@
+@model EduChatbot.Models.Document
+
+@{
+    ViewData["Title"] = "Document Details";
+}
+
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h4 mb-1">@Model.FileName</h1>
+        <p class="text-muted mb-0">Chunk and embedding preview.</p>
+    </div>
+    <div>
+        <a asp-controller="Documents" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+        <a href="@Model.FilePath" target="_blank" class="btn btn-primary">Open file</a>
+    </div>
+</div>
+
+<div class="surface p-3 mb-3">
+    <div class="row g-3 info-grid">
+        <div class="col-md-3"><span>Status</span><strong>@Model.Status</strong></div>
+        <div class="col-md-3"><span>Chunks</span><strong>@Model.ChunkCount</strong></div>
+        <div class="col-md-3"><span>Lecturer</span><strong>@Model.UploadedBy</strong></div>
+        <div class="col-md-3"><span>Uploaded</span><strong>@Model.UploadedAt.ToString("dd/MM/yyyy HH:mm")</strong></div>
+    </div>
+</div>
+
+@if (!Model.Chunks.Any())
+{
+    <div class="alert alert-warning">Document này chưa có chunk data.</div>
+}
+else
+{
+    <div class="surface p-0">
+        <div class="table-toolbar px-3 py-2 border-bottom">Chunks and mock embeddings</div>
+        <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 90px;">Index</th>
+                    <th>Content</th>
+                    <th style="width: 260px;">Mock embedding</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var chunk in Model.Chunks)
+                {
+                    <tr>
+                        <td>@chunk.ChunkIndex</td>
+                        <td>@chunk.Content</td>
+                        <td><code>@chunk.EmbeddingData</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    </div>
+}

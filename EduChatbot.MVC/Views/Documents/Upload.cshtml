@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Upload Document";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="page-header mb-3">
+            <h1 class="h4 mb-1">Upload document</h1>
+            <p class="text-muted mb-0">PDF/DOCX files are indexed into chunks with mock embeddings.</p>
+        </div>
+
+        <form asp-controller="Documents" asp-action="Upload" method="post" enctype="multipart/form-data" class="surface p-4">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label for="uploadedBy" class="form-label">Lecturer name</label>
+                <input type="text" id="uploadedBy" name="uploadedBy" class="form-control" value="Lecturer" maxlength="100" />
+            </div>
+
+            <div class="mb-3">
+                <label for="documentFile" class="form-label">Document file</label>
+                <input type="file" id="documentFile" name="documentFile" class="form-control" accept=".pdf,.docx" />
+                <div class="form-text">PDF or DOCX, up to 10 MB.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Upload</button>
+                <a asp-controller="Documents" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

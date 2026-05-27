@@ -1,0 +1,87 @@
+@model EduChatbot.Models.DocumentListResult
+
+@{
+    ViewData["Title"] = "Documents";
+}
+
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="h4 mb-1">Documents</h1>
+        <p class="text-muted mb-0">Manage uploaded academic files and indexing status.</p>
+    </div>
+    <a asp-controller="Documents" asp-action="Upload" class="btn btn-primary">Upload document</a>
+</div>
+
+@if (TempData["UploadMessage"] != null)
+{
+    <div class="alert alert-success d-flex justify-content-between align-items-center">
+        <span><strong>@TempData["UploadMessage"]</strong> - @TempData["ChunkCount"] chunks, @TempData["IndexStatus"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<form asp-controller="Documents" asp-action="Index" method="get" class="surface p-3 mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-9">
+            <input type="search" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Search file name, lecturer, status" />
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-outline-primary">Search</button>
+        </div>
+    </div>
+</form>
+
+@if (!Model.Documents.Any())
+{
+    <div class="alert alert-info">Chưa có tài liệu nào được upload.</div>
+}
+else
+{
+    <div class="surface p-0">
+        <div class="table-toolbar px-3 py-2 border-bottom">Showing @Model.TotalCount document(s)</div>
+        <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>File</th>
+                    <th>Lecturer</th>
+                    <th>Size</th>
+                    <th>Chunks</th>
+                    <th>Status</th>
+                    <th>Uploaded at</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var document in Model.Documents)
+                {
+                    <tr>
+                        <td class="fw-medium">@document.FileName</td>
+                        <td>@document.UploadedBy</td>
+                        <td>@document.FileSize bytes</td>
+                        <td>@document.ChunkCount</td>
+                        <td>
+                            <span class="badge @(document.Status == "Completed" ? "bg-success" : "bg-secondary")">
+                                @document.Status
+                            </span>
+                        </td>
+                        <td>@document.UploadedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-nowrap">
+                            <a href="@document.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">Open</a>
+                            <a asp-controller="Documents" asp-action="Details" asp-route-id="@document.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                            <form asp-controller="Documents" asp-action="Delete" asp-route-id="@document.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this document and its chunks?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    </div>
+}

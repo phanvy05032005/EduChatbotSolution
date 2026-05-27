@@ -1,0 +1,157 @@
+html {
+  font-size: 14px;
+  min-height: 100%;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  min-height: 100vh;
+  margin-bottom: 32px;
+  background: #f6f7f9;
+  color: #1f2937;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell .navbar {
+  min-height: 64px;
+}
+
+.navbar-brand {
+  color: #111827;
+  letter-spacing: 0;
+}
+
+.nav-link {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  color: #0d6efd;
+}
+
+.page-header {
+  padding-bottom: 0.25rem;
+}
+
+.surface,
+.metric-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.metric-card {
+  min-height: 104px;
+  padding: 1rem;
+}
+
+.metric-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  margin-top: 0.35rem;
+  color: #111827;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.table-toolbar {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.table {
+  --bs-table-bg: transparent;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.875rem 1rem;
+}
+
+.table-light th {
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.btn {
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8125rem;
+}
+
+.form-control,
+.form-select {
+  border-color: #d1d5db;
+  border-radius: 6px;
+}
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus,
+.btn:active:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.16);
+}
+
+.form-label {
+  color: #374151;
+  font-weight: 600;
+}
+
+.form-text {
+  color: #6b7280;
+}
+
+.alert {
+  border-radius: 8px;
+  border-width: 1px;
+}
+
+.badge {
+  border-radius: 999px;
+  font-weight: 600;
+  padding: 0.4rem 0.65rem;
+}
+
+.info-grid span {
+  display: block;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.info-grid strong {
+  display: block;
+  color: #111827;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+code {
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+}

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="EduChatbot.Business/EduChatbot.Business.csproj" />
+  <Project Path="EduChatbot.Data/EduChatbot.Data.csproj" />
+  <Project Path="EduChatbot.Models/EduChatbot.Models.csproj" />
+  <Project Path="EduChatbot.MVC/EduChatbot.MVC.csproj" />
+</Solution>

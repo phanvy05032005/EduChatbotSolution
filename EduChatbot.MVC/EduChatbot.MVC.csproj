@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EduChatbot.Business\EduChatbot.Business.csproj" />
+    <ProjectReference Include="..\EduChatbot.Data\EduChatbot.Data.csproj" />
+    <ProjectReference Include="..\EduChatbot.Models\EduChatbot.Models.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
