@@ -122,6 +122,11 @@ public class AccountController : Controller
             return RedirectToAction("Dashboard", "Documents");
         }
 
+        if (user != null && await _userManager.IsInRoleAsync(user, ApplicationRoles.Student))
+        {
+            return RedirectToAction("Index", "Chat");
+        }
+
         return RedirectToAction("Index", "Home");
     }
 }

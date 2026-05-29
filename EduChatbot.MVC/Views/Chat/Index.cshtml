@@ -1,0 +1,73 @@
+@model List<EduChatbot.Models.ChatConversation>
+
+@{
+    ViewData["Title"] = "Chat";
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/chat.css" asp-append-version="true" />
+
+<div class="chat-bg-particles">
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+</div>
+
+<div style="position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 3rem 1.5rem;">
+
+    <div style="margin-bottom: 2.5rem;">
+        <div class="chat-hero-label">✦ Your conversations</div>
+        <h1 class="chat-hero-title">
+            Học tập, <em>khám phá</em>,<br />
+            với tài liệu của bạn.
+        </h1>
+    </div>
+
+    <a asp-controller="Chat" asp-action="Conversation" class="chat-new-btn">
+        <div class="icon-circle">+</div>
+        <div class="btn-text">
+            <div class="title">New Chat</div>
+            <div class="subtitle">Bắt đầu cuộc hội thoại mới với AI</div>
+        </div>
+        <div class="arrow">→</div>
+    </a>
+
+    @if (Model.Count == 0)
+    {
+        <div class="chat-empty-state">
+            <div class="empty-icon">💬</div>
+            <h3>Start your first conversation</h3>
+            <p>Bạn chưa có cuộc trò chuyện nào. Hãy tạo cuộc trò chuyện mới để bắt đầu khám phá tài liệu.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var conv in Model)
+        {
+            <a asp-controller="Chat" asp-action="Conversation" asp-route-id="@conv.Id" class="conv-card">
+                <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                    <div class="conv-icon">💬</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="conv-title">@conv.Title</div>
+                        <div class="conv-preview">
+                            @{
+                                var lastMsg = conv.Messages?.LastOrDefault();
+                            }
+                            @(lastMsg != null ? (lastMsg.Content.Length > 80 ? lastMsg.Content[..80] + "..." : lastMsg.Content) : "Chưa có tin nhắn")
+                        </div>
+                        <div class="conv-meta">
+                            <span>📅 @conv.UpdatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+                            <span>💬 @(conv.Messages?.Count ?? 0) tin nhắn</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.body.classList.add('chat-layout');
+    </script>
+}
