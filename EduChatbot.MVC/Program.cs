@@ -36,6 +36,12 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 
+// Đăng ký Chat services theo đúng flow 3 lớp: Controller -> Service -> Repository.
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.Configure<OpenRouterSettings>(builder.Configuration.GetSection("OpenRouter"));
+builder.Services.AddHttpClient<IChatService, ChatService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

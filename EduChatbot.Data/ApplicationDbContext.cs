@@ -16,6 +16,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
 
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -65,6 +69,46 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(chunk => new { chunk.DocumentId, chunk.ChunkIndex })
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<ChatConversation>(entity =>
+        {
+            entity.ToTable("chat_conversations");
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Id).HasColumnName("id");
+            entity.Property(c => c.UserId).HasColumnName("user_id").IsRequired().HasMaxLength(450);
+            entity.Property(c => c.Title).HasColumnName("title").IsRequired().HasMaxLength(255);
+            entity.Property(c => c.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(c => c.UpdatedAt)
+                .HasColumnName("updated_at")
+                .HasColumnType("timestamp with time zone");
+
+            entity.HasMany(c => c.Messages)
+                .WithOne(m => m.Conversation)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(c => c.UserId);
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.ToTable("chat_messages");
+            entity.HasKey(m => m.Id);
+
+            entity.Property(m => m.Id).HasColumnName("id");
+            entity.Property(m => m.ConversationId).HasColumnName("conversation_id");
+            entity.Property(m => m.Role).HasColumnName("role").IsRequired().HasMaxLength(10);
+            entity.Property(m => m.Content).HasColumnName("content").IsRequired();
+            entity.Property(m => m.SourceChunks).HasColumnName("source_chunks");
+            entity.Property(m => m.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone");
+
+            entity.HasIndex(m => m.ConversationId);
         });
 
         modelBuilder.Entity<ApplicationUser>(entity =>

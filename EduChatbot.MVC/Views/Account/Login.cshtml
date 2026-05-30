@@ -2,41 +2,122 @@
 
 @{
     ViewData["Title"] = "Login";
+    Layout = "_AuthLayout";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="page-header mb-3">
-            <h1 class="h4 mb-1">Login</h1>
-            <p class="text-muted mb-0">Sign in with your academic account.</p>
+<div class="auth-container">
+    <!-- LEFT — Branding Panel -->
+    <aside class="auth-branding">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">🎓</div>
+            <div>
+                <div class="auth-logo-text">EduChatbot</div>
+                <div class="auth-logo-sub">Academic assistant</div>
+            </div>
         </div>
 
-        <form asp-controller="Account" asp-action="Login" method="post" class="surface p-4">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="ReturnUrl" />
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+        <div class="auth-branding-content">
+            <div class="auth-badge">
+                ✦ <span>Welcome back</span>
+            </div>
+            <h1 class="auth-headline">
+                Học tập <em>thông minh</em><br />
+                cùng tài liệu của bạn.
+            </h1>
+            <p class="auth-tagline">
+                Hỏi đáp tức thì về tài liệu giảng viên đã upload — kèm trích dẫn nguồn rõ ràng theo từng đoạn.
+            </p>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" />
+            <div class="auth-features">
+                <div class="auth-feature-card">
+                    <div class="auth-feature-icon">📖</div>
+                    <div class="auth-feature-label">Tài liệu</div>
+                </div>
+                <div class="auth-feature-card">
+                    <div class="auth-feature-icon">💬</div>
+                    <div class="auth-feature-label">Hỏi đáp</div>
+                </div>
+                <div class="auth-feature-card">
+                    <div class="auth-feature-icon">✦</div>
+                    <div class="auth-feature-label">Trích nguồn</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-copyright">© 2026 EduChatbot · Academic platform</div>
+    </aside>
+
+    <!-- RIGHT — Form Panel -->
+    <section class="auth-form-panel">
+        <div class="auth-form-wrapper">
+            <!-- Mobile logo -->
+            <div class="auth-mobile-logo">
+                <div class="auth-logo-icon">🎓</div>
+                <div class="auth-logo-text">EduChatbot</div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" />
+            <!-- Tab switcher -->
+            <div class="auth-tabs">
+                <span class="auth-tab active">Login</span>
+                <a asp-controller="Account" asp-action="Register" class="auth-tab">Register</a>
             </div>
 
-            <div class="form-check mb-3">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label">Remember me</label>
-            </div>
+            <h2 class="auth-form-title">Chào mừng <em>quay lại</em></h2>
+            <p class="auth-form-subtitle">Sign in with your academic account.</p>
 
-            <button type="submit" class="btn btn-primary w-100">Login</button>
-            <div class="text-center mt-3">
-                <a asp-controller="Account" asp-action="Register">Create an account</a>
-            </div>
-        </form>
-    </div>
+            <form asp-controller="Account" asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <div asp-validation-summary="All" class="auth-errors"></div>
+
+                <!-- Email -->
+                <div class="auth-field">
+                    <label asp-for="Email" class="auth-field-label">Email</label>
+                    <div class="auth-field-input-wrapper">
+                        <span class="auth-field-icon">✉</span>
+                        <input asp-for="Email" placeholder="student@university.edu.vn" />
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="auth-field">
+                    <label asp-for="Password" class="auth-field-label">Password</label>
+                    <div class="auth-field-input-wrapper">
+                        <span class="auth-field-icon">🔒</span>
+                        <input asp-for="Password" placeholder="••••••••" />
+                    </div>
+                </div>
+
+                <!-- Remember + Forgot -->
+                <div class="auth-options">
+                    <label class="auth-remember">
+                        <input asp-for="RememberMe" type="checkbox" />
+                        <span>Remember me</span>
+                    </label>
+                    <span class="auth-forgot">Forgot?</span>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="auth-submit-btn">
+                    <span>Sign in</span>
+                    <span class="arrow">→</span>
+                </button>
+
+                <!-- Divider -->
+                <div class="auth-divider">
+                    <div class="auth-divider-line"></div>
+                    <span class="auth-divider-text">or</span>
+                </div>
+
+                <!-- Switch -->
+                <div class="auth-switch">
+                    Chưa có tài khoản?
+                    <a asp-controller="Account" asp-action="Register">Create an account</a>
+                </div>
+            </form>
+        </div>
+    </section>
 </div>
 
 @section Scripts {
