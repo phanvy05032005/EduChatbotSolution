@@ -1,3 +1,4 @@
+using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 

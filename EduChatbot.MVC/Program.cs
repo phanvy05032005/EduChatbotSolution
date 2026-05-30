@@ -1,6 +1,7 @@
 using EduChatbot.Business.Services;
 using EduChatbot.Data;
 using EduChatbot.Data.Identity;
+using EduChatbot.Models.Identity;
 using EduChatbot.Data.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

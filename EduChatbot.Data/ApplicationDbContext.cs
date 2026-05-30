@@ -1,4 +1,4 @@
-using EduChatbot.Data.Identity;
+using EduChatbot.Models.Identity;
 using EduChatbot.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

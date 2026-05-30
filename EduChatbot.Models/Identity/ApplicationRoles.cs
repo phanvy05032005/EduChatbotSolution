@@ -1,4 +1,4 @@
-namespace EduChatbot.Data.Identity;
+namespace EduChatbot.Models.Identity;
 
 public static class ApplicationRoles
 {
