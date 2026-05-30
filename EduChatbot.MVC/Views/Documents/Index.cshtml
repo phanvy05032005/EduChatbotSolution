@@ -72,6 +72,7 @@ else
                         <td>@document.UploadedAt.ToString("dd/MM/yyyy HH:mm")</td>
                         <td class="text-nowrap">
                             <a href="@document.FilePath" target="_blank" class="btn btn-sm btn-outline-primary">Open</a>
+                            <a asp-controller="Documents" asp-action="Edit" asp-route-id="@document.Id" class="btn btn-sm btn-outline-warning">Edit</a>
                             <a asp-controller="Documents" asp-action="Details" asp-route-id="@document.Id" class="btn btn-sm btn-outline-secondary">Details</a>
                             <form asp-controller="Documents" asp-action="Delete" asp-route-id="@document.Id" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()

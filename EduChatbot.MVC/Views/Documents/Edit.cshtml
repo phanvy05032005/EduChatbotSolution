@@ -1,0 +1,42 @@
+@model EduChatbot.Models.Document
+
+@{
+    ViewData["Title"] = "Sửa tài liệu";
+}
+
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-white">Chỉnh sửa tên tài liệu</h2>
+        </div>
+    </div>
+
+    <div class="card glass-card">
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="mb-4">
+                    <label for="fileName" class="form-label text-light">Tên tài liệu <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary" id="fileName" name="fileName" value="@Model.FileName" required maxlength="255" />
+                    <span class="text-danger">@Html.ValidationMessage("fileName")</span>
+                    <div class="form-text text-light opacity-75">Ví dụ: Bài giảng môn ABC (Chương 1-3).pdf</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-light">Tên file lưu trữ hệ thống (không thể đổi)</label>
+                    <input type="text" class="form-control bg-dark text-light border-secondary opacity-50" value="@Model.StoredFileName" disabled />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius: 8px;">
+                        Lưu thay đổi
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-light px-4 py-2" style="border-radius: 8px;">
+                        Hủy bỏ
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

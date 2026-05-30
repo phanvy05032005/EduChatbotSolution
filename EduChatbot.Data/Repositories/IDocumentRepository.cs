@@ -12,5 +12,7 @@ public interface IDocumentRepository
 
     Task AddAsync(Document document);
 
+    Task UpdateAsync(Document document);
+
     Task DeleteAsync(Document document);
 }

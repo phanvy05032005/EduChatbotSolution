@@ -12,6 +12,8 @@ public interface IDocumentService
 
     Task<bool> DeleteDocumentAsync(int id, string webRootPath, string? currentUserId = null, bool isAdmin = false);
 
+    Task<bool> UpdateDocumentNameAsync(int id, string newFileName, string? currentUserId = null, bool isAdmin = false);
+
     Task<DocumentUploadResult> UploadDocumentAsync(
         Stream fileStream,
         string originalFileName,

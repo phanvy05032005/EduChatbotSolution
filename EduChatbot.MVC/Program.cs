@@ -43,6 +43,9 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.Configure<OpenRouterSettings>(builder.Configuration.GetSection("OpenRouter"));
 builder.Services.AddHttpClient<IChatService, ChatService>();
 
+// Yêu cầu Assignment: Apply Singleton pattern
+builder.Services.AddSingleton<IAppStatusService, AppStatusService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

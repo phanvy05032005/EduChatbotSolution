@@ -108,4 +108,49 @@ public class DocumentsController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    [Authorize(Roles = ApplicationRoles.DocumentManagers)]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var document = await _documentService.GetDocumentDetailsAsync(
+            id,
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            User.IsInRole(ApplicationRoles.Admin));
+
+        if (document == null)
+        {
+            return NotFound();
+        }
+
+        return View(document);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = ApplicationRoles.DocumentManagers)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            ModelState.AddModelError("fileName", "Tên tài liệu không được để trống.");
+            var document = await _documentService.GetDocumentDetailsAsync(
+                id,
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                User.IsInRole(ApplicationRoles.Admin));
+            return View(document);
+        }
+
+        var updated = await _documentService.UpdateDocumentNameAsync(
+            id,
+            fileName,
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            User.IsInRole(ApplicationRoles.Admin));
+
+        TempData[updated ? "UploadMessage" : "ErrorMessage"] = updated
+            ? "Đã cập nhật tên tài liệu thành công."
+            : "Không thể cập nhật tài liệu.";
+
+        return RedirectToAction(nameof(Index));
+    }
 }

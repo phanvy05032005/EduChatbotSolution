@@ -152,6 +152,20 @@ public class DocumentService : IDocumentService
         return true;
     }
 
+    public async Task<bool> UpdateDocumentNameAsync(int id, string newFileName, string? currentUserId = null, bool isAdmin = false)
+    {
+        var ownerFilter = isAdmin ? null : currentUserId;
+        var document = await _documentRepository.GetByIdAsync(id, ownerFilter);
+        if (document == null)
+        {
+            return false;
+        }
+
+        document.FileName = newFileName;
+        await _documentRepository.UpdateAsync(document);
+        return true;
+    }
+
     private static string ValidateFile(string fileName, long fileSize)
     {
         if (string.IsNullOrWhiteSpace(fileName))

@@ -73,4 +73,10 @@ public class DocumentRepository : IDocumentRepository
         _context.Documents.Remove(document);
         await _context.SaveChangesAsync();
     }
+
+    public async Task UpdateAsync(Document document)
+    {
+        _context.Documents.Update(document);
+        await _context.SaveChangesAsync();
+    }
 }
