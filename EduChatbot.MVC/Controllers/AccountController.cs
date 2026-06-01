@@ -1,5 +1,5 @@
-using EduChatbot.Data.Identity;
 using EduChatbot.MVC.Models;
+using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

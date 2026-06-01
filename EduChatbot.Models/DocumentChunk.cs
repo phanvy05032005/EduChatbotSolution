@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Pgvector;
 
 namespace EduChatbot.Models;
 
@@ -13,10 +15,9 @@ public class DocumentChunk
     // Nội dung text nhỏ sau khi chunk từ document gốc.
     public string Content { get; set; } = string.Empty;
 
-    // Assignment 1 dùng embedding mock, chưa gọi AI thật.
-    [Required]
-    [MaxLength(1000)]
-    public string EmbeddingData { get; set; } = string.Empty;
+    // Vector embedding thật, tạo từ nội dung chunk bằng embedding model.
+    [Column(TypeName = "vector(1536)")]
+    public Vector? Embedding { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

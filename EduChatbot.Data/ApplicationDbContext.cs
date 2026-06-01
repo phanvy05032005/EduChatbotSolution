@@ -1,7 +1,8 @@
-using EduChatbot.Data.Identity;
 using EduChatbot.Models;
+using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 namespace EduChatbot.Data;
 
@@ -23,6 +24,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("vector");
 
         modelBuilder.Entity<Document>(entity =>
         {
@@ -57,12 +59,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("document_chunks");
             entity.HasKey(chunk => chunk.Id);
 
-            // Bảng chunk lưu text nhỏ và embedding mock cho workflow RAG Assignment 1.
+            // Bảng chunk lưu text nhỏ và vector embedding thật cho workflow RAG.
             entity.Property(chunk => chunk.Id).HasColumnName("id");
             entity.Property(chunk => chunk.DocumentId).HasColumnName("document_id");
             entity.Property(chunk => chunk.ChunkIndex).HasColumnName("chunk_index");
             entity.Property(chunk => chunk.Content).HasColumnName("content").IsRequired();
-            entity.Property(chunk => chunk.EmbeddingData).HasColumnName("embedding_data").IsRequired().HasMaxLength(1000);
+            entity.Property(chunk => chunk.Embedding).HasColumnName("embedding").HasColumnType("vector(1536)");
             entity.Property(chunk => chunk.CreatedAt)
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone");

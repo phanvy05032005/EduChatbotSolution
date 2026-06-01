@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace EduChatbot.Data.Identity;
+namespace EduChatbot.Models.Identity;
 
 public class ApplicationUser : IdentityUser
 {

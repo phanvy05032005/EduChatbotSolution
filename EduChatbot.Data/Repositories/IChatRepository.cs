@@ -14,5 +14,5 @@ public interface IChatRepository
 
     Task UpdateConversationAsync(ChatConversation conversation);
 
-    Task<List<DocumentChunk>> SearchChunksAsync(string keyword, int topK = 5);
+    Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int topK = 5);
 }

@@ -1,5 +1,7 @@
 using EduChatbot.Models;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 
 namespace EduChatbot.Data.Repositories;
 
@@ -46,44 +48,20 @@ public class ChatRepository : IChatRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<DocumentChunk>> SearchChunksAsync(string keyword, int topK = 5)
+    public async Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int topK = 5)
     {
-        // Tìm kiếm keyword trong nội dung chunk, dùng ILIKE của PostgreSQL (case-insensitive).
-        var words = keyword
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(w => w.Length > 2)
-            .Take(5)
-            .ToList();
-
-        if (words.Count == 0)
+        if (queryEmbedding.Length == 0)
         {
             return [];
         }
 
-        // Build SQL WHERE clause với OR cho từng từ khóa.
-        // EF Core LINQ không translate được dynamic OR + ILike nên dùng raw SQL.
-        var conditions = new List<string>();
-        var parameters = new List<Npgsql.NpgsqlParameter>();
+        var vector = new Vector(queryEmbedding);
 
-        for (int i = 0; i < words.Count; i++)
-        {
-            conditions.Add($"dc.content ILIKE @p{i}");
-            parameters.Add(new Npgsql.NpgsqlParameter($"p{i}", $"%{words[i]}%"));
-        }
-
-        var whereClause = string.Join(" OR ", conditions);
-        var sql = $@"
-            SELECT dc.id, dc.document_id, dc.chunk_index, dc.content, dc.embedding_data, dc.created_at
-            FROM document_chunks dc
-            WHERE {whereClause}
-            ORDER BY dc.id
-            LIMIT {topK}";
-
-        var chunks = await _context.DocumentChunks
-            .FromSqlRaw(sql, parameters.ToArray())
+        return await _context.DocumentChunks
             .Include(c => c.Document)
+            .Where(c => c.Embedding != null)
+            .OrderBy(c => c.Embedding!.CosineDistance(vector))
+            .Take(topK)
             .ToListAsync();
-
-        return chunks;
     }
 }

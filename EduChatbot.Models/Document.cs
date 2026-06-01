@@ -36,7 +36,7 @@ public class Document
 
     public int ChunkCount { get; set; }
 
-    // Embedding thật là vector số lớn; ở Assignment 1 chỉ lưu chuỗi demo để chứng minh đã index.
+    // Preview ngắn của embedding đầu tiên để hiển thị nhanh trên UI.
     [MaxLength(500)]
     public string EmbeddingPreview { get; set; } = string.Empty;
 
@@ -46,6 +46,6 @@ public class Document
 
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
-    // Một Document có nhiều chunk để phục vụ RAG/chatbot ở các assignment sau.
+    // Một Document có nhiều chunk để phục vụ RAG/chatbot.
     public List<DocumentChunk> Chunks { get; set; } = [];
 }

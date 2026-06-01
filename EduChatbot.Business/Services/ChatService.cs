@@ -10,15 +10,18 @@ namespace EduChatbot.Business.Services;
 public class ChatService : IChatService
 {
     private readonly IChatRepository _chatRepository;
+    private readonly IEmbeddingService _embeddingService;
     private readonly HttpClient _httpClient;
     private readonly OpenRouterSettings _settings;
 
     public ChatService(
         IChatRepository chatRepository,
+        IEmbeddingService embeddingService,
         HttpClient httpClient,
         IOptions<OpenRouterSettings> settings)
     {
         _chatRepository = chatRepository;
+        _embeddingService = embeddingService;
         _httpClient = httpClient;
         _settings = settings.Value;
     }
@@ -62,8 +65,9 @@ public class ChatService : IChatService
         };
         await _chatRepository.AddMessageAsync(userMessage);
 
-        // Bước 2: Search chunks liên quan trong DB.
-        var chunks = await _chatRepository.SearchChunksAsync(question);
+        // Bước 2: Tạo embedding cho câu hỏi và search chunks liên quan bằng cosine similarity.
+        var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(question);
+        var chunks = await _chatRepository.SearchChunksAsync(questionEmbedding);
 
         // Bước 3: Build prompt context từ chunks.
         var context = BuildPromptContext(chunks);

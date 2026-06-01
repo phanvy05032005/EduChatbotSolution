@@ -1,46 +1,12 @@
-using EduChatbot.Business.Services;
-using EduChatbot.Data;
-using EduChatbot.Data.Identity;
-using EduChatbot.Data.Repositories;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using EduChatbot.Business;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Đăng ký DbContext để Repository thao tác với PostgreSQL thông qua Entity Framework Core.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-    {
-        // Assignment 1 dùng password policy vừa đủ để demo role-based authorization.
-        options.Password.RequiredLength = 6;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.LoginPath = "/Account/Login";
-    options.LogoutPath = "/Account/Logout";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-});
-
-// Đăng ký dependency injection theo đúng flow Controller -> Service -> Repository.
-builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
-builder.Services.AddScoped<IDocumentService, DocumentService>();
-
-// Đăng ký Chat services theo đúng flow 3 lớp: Controller -> Service -> Repository.
-builder.Services.AddScoped<IChatRepository, ChatRepository>();
-builder.Services.AddScoped<IChatService, ChatService>();
-builder.Services.Configure<OpenRouterSettings>(builder.Configuration.GetSection("OpenRouter"));
-builder.Services.AddHttpClient<IChatService, ChatService>();
+// Đăng ký toàn bộ Business + Data thông qua Business layer để MVC không phụ thuộc trực tiếp Data layer.
+builder.Services.AddEduChatbotApplication(builder.Configuration);
 
 var app = builder.Build();
 
@@ -65,6 +31,6 @@ app.MapControllerRoute(
     pattern: "{controller=Documents}/{action=Dashboard}/{id?}")
     .WithStaticAssets();
 
-await IdentitySeeder.SeedAsync(app.Services);
+await app.Services.SeedEduChatbotIdentityAsync();
 
 app.Run();

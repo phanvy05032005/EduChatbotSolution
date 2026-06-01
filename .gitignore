@@ -5,6 +5,15 @@
 
 # dotenv files
 .env
+.env.*
+!.env.example
+
+# Local secrets and database backups
+*.dump
+*.bak
+*.backup
+appsettings.Local.json
+appsettings.*.Local.json
 
 # User-specific files
 *.rsuser

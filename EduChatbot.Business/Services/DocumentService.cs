@@ -1,7 +1,14 @@
-using System.Security.Cryptography;
+using System.Globalization;
 using System.Text;
+using DocumentFormat.OpenXml.Packaging;
 using EduChatbot.Data.Repositories;
 using EduChatbot.Models;
+using Microsoft.Extensions.Logging;
+using Pgvector;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
+using OpenXmlParagraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
+using OpenXmlText = DocumentFormat.OpenXml.Wordprocessing.Text;
 
 namespace EduChatbot.Business.Services;
 
@@ -14,10 +21,17 @@ public class DocumentService : IDocumentService
     private static readonly string[] AllowedExtensions = [".pdf", ".docx"];
 
     private readonly IDocumentRepository _documentRepository;
+    private readonly IEmbeddingService _embeddingService;
+    private readonly ILogger<DocumentService> _logger;
 
-    public DocumentService(IDocumentRepository documentRepository)
+    public DocumentService(
+        IDocumentRepository documentRepository,
+        IEmbeddingService embeddingService,
+        ILogger<DocumentService> logger)
     {
         _documentRepository = documentRepository;
+        _embeddingService = embeddingService;
+        _logger = logger;
     }
 
     public async Task<DocumentListResult> GetDocumentsAsync(string? searchTerm = null, string? currentUserId = null, bool isAdmin = false)
@@ -63,6 +77,7 @@ public class DocumentService : IDocumentService
             };
         }
 
+        string? physicalFilePath = null;
         try
         {
             var uploadFolder = Path.Combine(webRootPath, "uploads", "documents");
@@ -70,25 +85,41 @@ public class DocumentService : IDocumentService
 
             var extension = Path.GetExtension(originalFileName).ToLowerInvariant();
             var storedFileName = $"{Guid.NewGuid():N}{extension}";
-            var physicalFilePath = Path.Combine(uploadFolder, storedFileName);
+            physicalFilePath = Path.Combine(uploadFolder, storedFileName);
 
             await using (var outputStream = File.Create(physicalFilePath))
             {
                 await fileStream.CopyToAsync(outputStream);
             }
 
-            // Các bước dưới đây là mock theo yêu cầu Assignment 1, chưa dùng AI thật.
-            var extractedText = MockExtractText(originalFileName, extension, fileSize);
+            var extractedText = ExtractText(physicalFilePath, extension);
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                File.Delete(physicalFilePath);
+                return new DocumentUploadResult
+                {
+                    IsSuccess = false,
+                    Message = "Không extract được nội dung text từ file. Vui lòng kiểm tra lại PDF/DOCX.",
+                    Status = StatusFailed
+                };
+            }
+
             var chunks = ChunkText(extractedText);
-            var documentChunks = chunks
-                .Select((chunkContent, index) => new DocumentChunk
+            var documentChunks = new List<DocumentChunk>();
+
+            for (var index = 0; index < chunks.Count; index++)
+            {
+                var chunkContent = chunks[index];
+                var embedding = await _embeddingService.CreateEmbeddingAsync(chunkContent);
+
+                documentChunks.Add(new DocumentChunk
                 {
                     ChunkIndex = index,
                     Content = chunkContent,
-                    EmbeddingData = GenerateMockEmbedding(chunkContent),
+                    Embedding = new Vector(embedding),
                     CreatedAt = DateTime.UtcNow
-                })
-                .ToList();
+                });
+            }
 
             var document = new Document
             {
@@ -101,13 +132,13 @@ public class DocumentService : IDocumentService
                 FileSize = fileSize,
                 ExtractedText = extractedText,
                 ChunkCount = documentChunks.Count,
-                EmbeddingPreview = documentChunks.FirstOrDefault()?.EmbeddingData ?? string.Empty,
+                EmbeddingPreview = FormatEmbeddingPreview(documentChunks.FirstOrDefault()?.Embedding),
                 Status = StatusProcessing,
                 UploadedAt = DateTime.UtcNow,
                 Chunks = documentChunks
             };
 
-            // Vì xử lý đang chạy đồng bộ trong Assignment 1, document được lưu khi đã index xong.
+            // Vì xử lý đang chạy đồng bộ, document được lưu khi đã extract/chunk/embed xong.
             document.Status = StatusCompleted;
             await _documentRepository.AddAsync(document);
 
@@ -120,12 +151,23 @@ public class DocumentService : IDocumentService
                 Status = document.Status
             };
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Document upload/indexing failed for {FileName}", originalFileName);
+
+            if (!string.IsNullOrWhiteSpace(physicalFilePath) && File.Exists(physicalFilePath))
+            {
+                File.Delete(physicalFilePath);
+            }
+
+            var message = ex is InvalidOperationException or ArgumentException
+                ? ex.Message
+                : "Xử lý tài liệu thất bại. Vui lòng kiểm tra file hoặc database.";
+
             return new DocumentUploadResult
             {
                 IsSuccess = false,
-                Message = "Xử lý tài liệu thất bại. Vui lòng kiểm tra file hoặc database.",
+                Message = message,
                 Status = StatusFailed
             };
         }
@@ -185,21 +227,69 @@ public class DocumentService : IDocumentService
             : uploadedBy.Trim();
     }
 
-    private static string MockExtractText(string fileName, string extension, long fileSize)
+    private static string ExtractText(string filePath, string extension)
     {
-        // Đây là text demo thay cho thư viện đọc PDF/DOCX thật trong Assignment 1.
-        return $"""
-        Tài liệu học tập: {fileName}
-        Loại file: {extension}
-        Dung lượng: {fileSize} bytes
-        Nội dung mô phỏng: Đây là phần text đã được extract từ tài liệu. Hệ thống sẽ dùng nội dung này để chia chunk và tạo embedding demo phục vụ tìm kiếm sau này.
-        Chủ đề mô phỏng: ASP.NET Core MVC, Entity Framework Core, PostgreSQL, kiến trúc 3 lớp, repository, service, RAG.
-        """;
+        return extension switch
+        {
+            ".pdf" => ExtractPdfText(filePath),
+            ".docx" => ExtractDocxText(filePath),
+            _ => string.Empty
+        };
+    }
+
+    private static string ExtractPdfText(string filePath)
+    {
+        var sb = new StringBuilder();
+
+        using var document = PdfDocument.Open(filePath);
+        foreach (var page in document.GetPages())
+        {
+            var text = ContentOrderTextExtractor.GetText(page);
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                sb.AppendLine(text);
+            }
+        }
+
+        return NormalizeExtractedText(sb.ToString());
+    }
+
+    private static string ExtractDocxText(string filePath)
+    {
+        var sb = new StringBuilder();
+
+        using var document = WordprocessingDocument.Open(filePath, false);
+        var body = document.MainDocumentPart?.Document?.Body;
+        if (body == null)
+        {
+            return string.Empty;
+        }
+
+        foreach (var paragraph in body.Descendants<OpenXmlParagraph>())
+        {
+            var paragraphText = string.Concat(paragraph.Descendants<OpenXmlText>().Select(text => text.Text));
+            if (!string.IsNullOrWhiteSpace(paragraphText))
+            {
+                sb.AppendLine(paragraphText);
+            }
+        }
+
+        return NormalizeExtractedText(sb.ToString());
+    }
+
+    private static string NormalizeExtractedText(string text)
+    {
+        var lines = text
+            .Replace("\r", "\n")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => !string.IsNullOrWhiteSpace(line));
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static List<string> ChunkText(string text)
     {
-        const int wordsPerChunk = 30;
+        const int wordsPerChunk = 220;
 
         var words = text
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -214,13 +304,17 @@ public class DocumentService : IDocumentService
         return chunks;
     }
 
-    private static string GenerateMockEmbedding(string text)
+    private static string FormatEmbeddingPreview(Vector? embedding)
     {
-        // Chuyển hash thành vector số demo, không phải embedding AI production.
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(text));
-        var values = bytes
+        if (embedding == null)
+        {
+            return string.Empty;
+        }
+
+        var values = embedding
+            .ToArray()
             .Take(8)
-            .Select(value => (value / 255d).ToString("0.0000"));
+            .Select(value => value.ToString("0.0000", CultureInfo.InvariantCulture));
 
         return string.Join(",", values);
     }
