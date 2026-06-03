@@ -46,6 +46,12 @@ public class Document
 
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
+    public int? CourseId { get; set; }
+
+    public Course? Course { get; set; }
+
+    public string? ValidationResult { get; set; }
+
     // Một Document có nhiều chunk để phục vụ RAG/chatbot.
     public List<DocumentChunk> Chunks { get; set; } = [];
 }

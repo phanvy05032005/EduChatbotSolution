@@ -16,7 +16,13 @@
         <header class="chat-main-header">
             <div class="chat-header-topic">
                 <span>EDU &middot; CHAT</span>
-                <strong>@Model.Title</strong>
+                <strong style="display: inline-block;">@Model.Title</strong>
+                @if (Model.Course != null)
+                {
+                    <span style="font-size: 0.85rem; font-weight: 500; background: rgba(37,99,235,0.1); color: #2563eb; padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.8rem; display: inline-flex; align-items: center; vertical-align: middle;">
+                        📚 @Model.Course.Code - @Model.Course.Name
+                    </span>
+                }
             </div>
             <div class="chat-mode-pill">
                 <span aria-hidden="true"></span>

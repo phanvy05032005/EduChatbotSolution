@@ -25,24 +25,39 @@ public class DocumentsController : Controller
     }
 
     [Authorize(Roles = ApplicationRoles.DocumentManagers)]
-    public IActionResult Upload()
+    public async Task<IActionResult> Upload()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var isAdmin = User.IsInRole(ApplicationRoles.Admin);
+        var courses = await _documentService.GetAvailableCoursesForUserAsync(userId, isAdmin);
+        ViewBag.Courses = courses;
         return View();
     }
 
     [HttpPost]
     [Authorize(Roles = ApplicationRoles.DocumentManagers)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile? documentFile)
+    public async Task<IActionResult> Upload(IFormFile? documentFile, int courseId)
     {
+        if (courseId <= 0)
+        {
+            ModelState.AddModelError("courseId", "Vui lòng chọn môn học.");
+        }
+
         if (documentFile == null)
         {
             ModelState.AddModelError("documentFile", "Vui lòng chọn file PDF hoặc DOCX.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var isAdmin = User.IsInRole(ApplicationRoles.Admin);
+            ViewBag.Courses = await _documentService.GetAvailableCoursesForUserAsync(userId, isAdmin);
             return View();
         }
 
-        // Controller chỉ nhận request và gọi Service, không xử lý DB trực tiếp.
-        await using var stream = documentFile.OpenReadStream();
+        await using var stream = documentFile!.OpenReadStream();
         var uploadedBy = await GetCurrentLecturerNameAsync();
         var result = await _documentService.UploadDocumentAsync(
             stream,
@@ -51,11 +66,15 @@ public class DocumentsController : Controller
             documentFile.Length,
             uploadedBy,
             User.FindFirstValue(ClaimTypes.NameIdentifier),
-            _webHostEnvironment.WebRootPath);
+            _webHostEnvironment.WebRootPath,
+            courseId);
 
         if (!result.IsSuccess)
         {
             ModelState.AddModelError("documentFile", result.Message);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var isAdmin = User.IsInRole(ApplicationRoles.Admin);
+            ViewBag.Courses = await _documentService.GetAvailableCoursesForUserAsync(userId, isAdmin);
             return View();
         }
 

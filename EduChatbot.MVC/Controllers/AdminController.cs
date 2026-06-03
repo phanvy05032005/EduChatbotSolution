@@ -103,7 +103,8 @@ public class AdminController : Controller
             model.FullName,
             model.Email,
             model.Password!,
-            model.AccountType);
+            model.AccountType,
+            model.SendEmail);
 
         if (!result.IsSuccess)
         {
@@ -286,5 +287,124 @@ public class AdminController : Controller
         return role == ApplicationRoles.Lecturer
             ? RedirectToAction(nameof(Lecturers))
             : RedirectToAction(nameof(Students));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ImportStudents(IFormFile? excelFile, bool sendEmail = false)
+    {
+        if (excelFile == null || excelFile.Length == 0)
+        {
+            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            return RedirectToAction(nameof(Students));
+        }
+
+        if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            return RedirectToAction(nameof(Students));
+        }
+
+        await using var stream = excelFile.OpenReadStream();
+        var result = await _adminService.ImportStudentsFromExcelAsync(stream, sendEmail);
+
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Students));
+    }
+
+    public async Task<IActionResult> Courses()
+    {
+        var courses = await _adminService.GetCoursesAsync();
+        var lecturers = await _adminService.GetLecturersAsync();
+
+        var model = new AdminCoursesViewModel
+        {
+            Courses = courses,
+            Lecturers = lecturers
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateCourse(string code, string name)
+    {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+        {
+            TempData["AdminError"] = "Mã môn học và tên môn học không được để trống.";
+            return RedirectToAction(nameof(Courses));
+        }
+
+        var result = await _adminService.CreateCourseAsync(code, name);
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Courses));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCourse(int id)
+    {
+        var result = await _adminService.DeleteCourseAsync(id);
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Courses));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignLecturer(string lecturerId, int courseId)
+    {
+        var result = await _adminService.AssignLecturerToCourseAsync(lecturerId, courseId);
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Courses));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveLecturer(string lecturerId, int courseId)
+    {
+        var result = await _adminService.RemoveLecturerFromCourseAsync(lecturerId, courseId);
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Courses));
     }
 }

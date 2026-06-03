@@ -43,6 +43,11 @@
                 <input asp-for="Password" />
                 <span asp-validation-for="Password" class="admin-validation"></span>
             </div>
+
+            <div class="admin-field" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                <input asp-for="SendEmail" type="checkbox" id="SendEmail" style="width: auto; min-height: auto; cursor: pointer;" />
+                <label for="SendEmail" style="margin-bottom: 0; cursor: pointer; text-transform: none; letter-spacing: normal; font-weight: 500;">Gửi email thông báo tài khoản</label>
+            </div>
         }
 
         <div class="admin-form-actions">

@@ -20,5 +20,7 @@ public class AdminAccountFormViewModel
     [DataType(DataType.Password)]
     public string? Password { get; set; }
 
+    public bool SendEmail { get; set; } = false;
+
     public bool IsEdit => !string.IsNullOrWhiteSpace(Id);
 }

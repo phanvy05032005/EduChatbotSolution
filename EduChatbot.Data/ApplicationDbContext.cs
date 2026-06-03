@@ -21,6 +21,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
+    public DbSet<Course> Courses => Set<Course>();
+
+    public DbSet<LecturerCourse> LecturerCourses => Set<LecturerCourse>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -47,11 +51,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(document => document.UploadedAt)
                 .HasColumnName("uploaded_at")
                 .HasColumnType("timestamp with time zone");
+            entity.Property(document => document.CourseId).HasColumnName("course_id");
+            entity.Property(document => document.ValidationResult).HasColumnName("validation_result");
 
             entity.HasMany(document => document.Chunks)
                 .WithOne(chunk => chunk.Document)
                 .HasForeignKey(chunk => chunk.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(document => document.Course)
+                .WithMany(course => course.Documents)
+                .HasForeignKey(document => document.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<DocumentChunk>(entity =>
@@ -87,11 +98,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(c => c.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone");
+            entity.Property(c => c.CourseId).HasColumnName("course_id");
 
             entity.HasMany(c => c.Messages)
                 .WithOne(m => m.Conversation)
                 .HasForeignKey(m => m.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Course)
+                .WithMany()
+                .HasForeignKey(c => c.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(c => c.UserId);
         });
@@ -116,6 +133,34 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(user => user.FullName).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<Course>(entity =>
+        {
+            entity.ToTable("courses");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).HasColumnName("id");
+            entity.Property(c => c.Code).HasColumnName("code").IsRequired().HasMaxLength(50);
+            entity.Property(c => c.Name).HasColumnName("name").IsRequired().HasMaxLength(255);
+            entity.HasIndex(c => c.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<LecturerCourse>(entity =>
+        {
+            entity.ToTable("lecturer_courses");
+            entity.HasKey(lc => new { lc.LecturerId, lc.CourseId });
+            entity.Property(lc => lc.LecturerId).HasColumnName("lecturer_id");
+            entity.Property(lc => lc.CourseId).HasColumnName("course_id");
+
+            entity.HasOne(lc => lc.Lecturer)
+                .WithMany()
+                .HasForeignKey(lc => lc.LecturerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(lc => lc.Course)
+                .WithMany(c => c.LecturerCourses)
+                .HasForeignKey(lc => lc.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

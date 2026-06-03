@@ -1,10 +1,16 @@
 using System.Globalization;
 using System.Text;
 using DocumentFormat.OpenXml.Packaging;
+using EduChatbot.Data;
 using EduChatbot.Data.Repositories;
 using EduChatbot.Models;
+using EduChatbot.Models.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Pgvector;
+using System.Net.Http;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using OpenXmlParagraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
@@ -22,17 +28,29 @@ public class DocumentService : IDocumentService
     private readonly IDocumentUploadRules _documentUploadRules;
     private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<DocumentService> _logger;
+    private readonly ApplicationDbContext _context;
+    private readonly HttpClient _httpClient;
+    private readonly OpenRouterSettings _settings;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public DocumentService(
         IDocumentRepository documentRepository,
         IDocumentUploadRules documentUploadRules,
         IEmbeddingService embeddingService,
-        ILogger<DocumentService> logger)
+        ILogger<DocumentService> logger,
+        ApplicationDbContext context,
+        HttpClient httpClient,
+        IOptions<OpenRouterSettings> settings,
+        UserManager<ApplicationUser> userManager)
     {
         _documentRepository = documentRepository;
         _documentUploadRules = documentUploadRules;
         _embeddingService = embeddingService;
         _logger = logger;
+        _context = context;
+        _httpClient = httpClient;
+        _settings = settings.Value;
+        _userManager = userManager;
     }
 
     public async Task<DocumentListResult> GetDocumentsAsync(string? searchTerm = null, string? currentUserId = null, bool isAdmin = false)
@@ -108,7 +126,8 @@ public class DocumentService : IDocumentService
         long fileSize,
         string uploadedBy,
         string? uploadedById,
-        string webRootPath)
+        string webRootPath,
+        int courseId)
     {
         var safeOriginalFileName = Path.GetFileName(originalFileName)?.Trim() ?? string.Empty;
         var validationMessage = ValidateFile(safeOriginalFileName, fileSize);
@@ -119,6 +138,37 @@ public class DocumentService : IDocumentService
                 IsSuccess = false,
                 Message = validationMessage
             };
+        }
+
+        var course = await _context.Courses.FindAsync(courseId);
+        if (course == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Môn học không tồn tại."
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(uploadedById))
+        {
+            var user = await _userManager.FindByIdAsync(uploadedById);
+            if (user != null)
+            {
+                var isAdmin = await _userManager.IsInRoleAsync(user, ApplicationRoles.Admin);
+                if (!isAdmin)
+                {
+                    var isAssigned = await _context.LecturerCourses.AnyAsync(lc => lc.LecturerId == uploadedById && lc.CourseId == courseId);
+                    if (!isAssigned)
+                    {
+                        return new DocumentUploadResult
+                        {
+                            IsSuccess = false,
+                            Message = "Bạn không được phân công giảng dạy môn học này."
+                        };
+                    }
+                }
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(uploadedById) &&
@@ -188,19 +238,35 @@ public class DocumentService : IDocumentService
                 ExtractedText = extractedText,
                 ChunkCount = documentChunks.Count,
                 EmbeddingPreview = FormatEmbeddingPreview(documentChunks.FirstOrDefault()?.Embedding),
-                Status = StatusProcessing,
+                Status = "Analyzing",
                 UploadedAt = DateTime.UtcNow,
+                CourseId = courseId,
                 Chunks = documentChunks
             };
 
-            // Vì xử lý đang chạy đồng bộ, document được lưu khi đã extract/chunk/embed xong.
-            document.Status = StatusCompleted;
+            var existingDocs = await _context.Documents
+                .Where(d => d.CourseId == courseId && d.Status == "Valid")
+                .ToListAsync();
+
+            var aiResult = await ValidateDocumentWithAiAsync(extractedText, course.Code, course.Name, existingDocs);
+            if (aiResult.IsValid)
+            {
+                document.Status = "Valid";
+            }
+            else
+            {
+                document.Status = "Invalid";
+            }
+            document.ValidationResult = aiResult.Reason;
+
             await _documentRepository.AddAsync(document);
 
             return new DocumentUploadResult
             {
                 IsSuccess = true,
-                Message = "Upload success",
+                Message = document.Status == "Valid"
+                    ? "Tài liệu hợp lệ và đã được phê duyệt thành công."
+                    : $"Tài liệu không hợp lệ (Phát hiện bởi AI): {aiResult.Reason}",
                 DocumentId = document.Id,
                 ChunkCount = document.ChunkCount,
                 Status = document.Status
@@ -227,6 +293,108 @@ public class DocumentService : IDocumentService
             };
         }
     }
+
+    private async Task<LlmValidationResult> ValidateDocumentWithAiAsync(string documentText, string courseCode, string courseName, List<Document> existingDocs)
+    {
+        var existingDocsContext = new StringBuilder();
+        if (existingDocs.Count > 0)
+        {
+            existingDocsContext.AppendLine("Dưới đây là các tài liệu học tập ĐÃ CÓ của môn học này:");
+            foreach (var doc in existingDocs)
+            {
+                existingDocsContext.AppendLine($"--- Tên tài liệu: {doc.FileName} ---");
+                var previewText = doc.ExtractedText.Length > 2000
+                    ? doc.ExtractedText[..2000] + "..."
+                    : doc.ExtractedText;
+                existingDocsContext.AppendLine(previewText);
+                existingDocsContext.AppendLine();
+            }
+        }
+        else
+        {
+            existingDocsContext.AppendLine("Chưa có tài liệu nào khác được upload cho môn học này.");
+        }
+
+        var systemPrompt = @"Bạn là chuyên gia kiểm định chất lượng tài liệu học thuật của EduChatbot.
+Nhiệm vụ của bạn là đánh giá xem tài liệu học tập mới tải lên có hợp lệ hay không.
+Quy tắc đánh giá:
+1. Tính liên quan: Tài liệu mới phải thực sự liên quan đến môn học có tên và mã được cung cấp. Nếu tài liệu lạc đề (ví dụ: công thức nấu ăn, truyện cười, hoặc tài liệu của môn học khác hoàn toàn), hãy đánh dấu là không hợp lệ.
+2. Tính nhất quán: Đối chiếu tài liệu mới với danh sách tài liệu cũ (nếu có). Phát hiện xem có mâu thuẫn thông tin nào không (ví dụ: tài liệu cũ nói bài thi 60 phút, tài liệu mới nói bài thi 90 phút; hoặc tài liệu cũ viết định nghĩa A là B, tài liệu mới viết định nghĩa A là C). Nếu có mâu thuẫn, hãy đánh dấu là không hợp lệ và chỉ rõ điểm mâu thuẫn, tài liệu nào đúng tài liệu nào sai (giả định tài liệu cũ là đúng).
+
+Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có cấu trúc như sau:
+{
+  ""isValid"": true hoặc false,
+  ""reason"": ""Lý do chi tiết vì sao tài liệu hợp lệ hoặc không hợp lệ. Nếu không hợp lệ và có mâu thuẫn, hãy chỉ rõ điểm mâu thuẫn với tài liệu cũ nào (ghi rõ tên tài liệu)""
+}";
+
+        var userPrompt = $@"Môn học: {courseCode} - {courseName}
+
+{existingDocsContext}
+
+--- TÀI LIỆU MỚI TẢI LÊN ---
+{documentText}
+";
+
+        try
+        {
+            var requestBody = new
+            {
+                model = _settings.Model,
+                messages = new[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = userPrompt }
+                },
+                response_format = new { type = "json_object" }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.BaseUrl)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _settings.ApiKey);
+
+            var response = await _httpClient.SendAsync(httpRequest);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new LlmValidationResult { IsValid = true, Reason = $"Không thể kiểm định qua AI (HTTP {(int)response.StatusCode}). Tạm thời phê duyệt." };
+            }
+
+            using var doc = System.Text.Json.JsonDocument.Parse(responseBody);
+            var content = doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return new LlmValidationResult { IsValid = true, Reason = "AI trả về phản hồi rỗng. Tạm thời phê duyệt." };
+            }
+
+            var result = System.Text.Json.JsonSerializer.Deserialize<LlmValidationResult>(content, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            return result ?? new LlmValidationResult { IsValid = true, Reason = "Không thể phân tích phản hồi JSON của AI. Tạm thời phê duyệt." };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi gọi AI kiểm định tài liệu.");
+            return new LlmValidationResult { IsValid = true, Reason = $"Lỗi kết nối AI: {ex.Message}. Tạm thời phê duyệt." };
+        }
+    }
+
+    private class LlmValidationResult
+    {
+        public bool IsValid { get; set; }
+        public string Reason { get; set; } = string.Empty;
+    }
+
 
     public async Task<bool> DeleteDocumentAsync(int id, string webRootPath, string? currentUserId = null, bool isAdmin = false)
     {
@@ -387,5 +555,21 @@ public class DocumentService : IDocumentService
             .Select(value => value.ToString("0.0000", CultureInfo.InvariantCulture));
 
         return string.Join(",", values);
+    }
+
+    public async Task<List<Course>> GetAvailableCoursesForUserAsync(string userId, bool isAdmin)
+    {
+        if (isAdmin)
+        {
+            return await _context.Courses
+                .OrderBy(c => c.Code)
+                .ToListAsync();
+        }
+
+        return await _context.LecturerCourses
+            .Where(lc => lc.LecturerId == userId)
+            .Select(lc => lc.Course!)
+            .OrderBy(c => c.Code)
+            .ToListAsync();
     }
 }

@@ -14,5 +14,7 @@ public interface IChatRepository
 
     Task UpdateConversationAsync(ChatConversation conversation);
 
-    Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int topK = 5);
+    Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int? courseId, int topK = 5);
+
+    Task<List<Course>> GetCoursesAsync();
 }

@@ -25,5 +25,8 @@ public interface IDocumentService
         long fileSize,
         string uploadedBy,
         string? uploadedById,
-        string webRootPath);
+        string webRootPath,
+        int courseId);
+
+    Task<List<Course>> GetAvailableCoursesForUserAsync(string userId, bool isAdmin);
 }

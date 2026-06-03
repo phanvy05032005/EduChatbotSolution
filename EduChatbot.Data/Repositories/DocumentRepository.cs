@@ -15,7 +15,7 @@ public class DocumentRepository : IDocumentRepository
     public async Task<List<Document>> GetAllAsync(string? searchTerm = null, string? uploadedById = null)
     {
         // Repository là nơi đọc dữ liệu từ database, Controller không gọi DbContext trực tiếp.
-        var query = _context.Documents.AsQueryable();
+        var query = _context.Documents.Include(document => document.Course).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(uploadedById))
         {
@@ -51,6 +51,7 @@ public class DocumentRepository : IDocumentRepository
     public async Task<Document?> GetByIdAsync(int id, string? uploadedById = null)
     {
         var query = _context.Documents
+            .Include(document => document.Course)
             .Include(document => document.Chunks.OrderBy(chunk => chunk.ChunkIndex))
             .AsQueryable();
 
