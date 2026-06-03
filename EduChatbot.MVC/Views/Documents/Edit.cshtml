@@ -2,7 +2,6 @@
 
 @{
     ViewData["Title"] = "Edit Document";
-    var statuses = new[] { "Completed", "Processing", "Failed" };
 }
 
 <section class="role-page narrow">
@@ -30,23 +29,6 @@
             <label asp-for="FileName">File name</label>
             <input asp-for="FileName" maxlength="255" />
             <span asp-validation-for="FileName" class="role-validation"></span>
-        </div>
-
-        <div class="role-field">
-            <label asp-for="UploadedBy">Lecturer</label>
-            <input asp-for="UploadedBy" maxlength="100" />
-            <span asp-validation-for="UploadedBy" class="role-validation"></span>
-        </div>
-
-        <div class="role-field">
-            <label asp-for="Status">Status</label>
-            <select asp-for="Status">
-                @foreach (var status in statuses)
-                {
-                    <option value="@status">@status</option>
-                }
-            </select>
-            <span asp-validation-for="Status" class="role-validation"></span>
         </div>
 
         <div class="role-form-actions">

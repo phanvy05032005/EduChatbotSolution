@@ -62,6 +62,16 @@ public class DocumentRepository : IDocumentRepository
         return await query.FirstOrDefaultAsync(document => document.Id == id);
     }
 
+    public async Task<bool> ExistsByUploadedByAndFileNameAsync(string uploadedById, string fileName)
+    {
+        var normalizedUploadedById = uploadedById.Trim();
+        var normalizedFileName = fileName.Trim().ToLower();
+
+        return await _context.Documents.AnyAsync(document =>
+            document.UploadedById == normalizedUploadedById &&
+            document.FileName.Trim().ToLower() == normalizedFileName);
+    }
+
     public async Task AddAsync(Document document)
     {
         await _context.Documents.AddAsync(document);

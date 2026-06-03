@@ -2,6 +2,7 @@ using EduChatbot.Business.Services;
 using EduChatbot.MVC.Models;
 using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -11,13 +12,16 @@ public class DocumentsController : Controller
 {
     private readonly IDocumentService _documentService;
     private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public DocumentsController(
         IDocumentService documentService,
-        IWebHostEnvironment webHostEnvironment)
+        IWebHostEnvironment webHostEnvironment,
+        UserManager<ApplicationUser> userManager)
     {
         _documentService = documentService;
         _webHostEnvironment = webHostEnvironment;
+        _userManager = userManager;
     }
 
     [Authorize(Roles = ApplicationRoles.DocumentManagers)]
@@ -29,7 +33,7 @@ public class DocumentsController : Controller
     [HttpPost]
     [Authorize(Roles = ApplicationRoles.DocumentManagers)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile? documentFile, string uploadedBy = "Lecturer")
+    public async Task<IActionResult> Upload(IFormFile? documentFile)
     {
         if (documentFile == null)
         {
@@ -39,6 +43,7 @@ public class DocumentsController : Controller
 
         // Controller chỉ nhận request và gọi Service, không xử lý DB trực tiếp.
         await using var stream = documentFile.OpenReadStream();
+        var uploadedBy = await GetCurrentLecturerNameAsync();
         var result = await _documentService.UploadDocumentAsync(
             stream,
             documentFile.FileName,
@@ -102,8 +107,6 @@ public class DocumentsController : Controller
         {
             Id = document.Id,
             FileName = document.FileName,
-            UploadedBy = document.UploadedBy,
-            Status = document.Status,
             StoredFileName = document.StoredFileName,
             FilePath = document.FilePath
         });
@@ -122,8 +125,6 @@ public class DocumentsController : Controller
         var result = await _documentService.UpdateDocumentAsync(
             model.Id,
             model.FileName,
-            model.UploadedBy,
-            model.Status,
             User.FindFirstValue(ClaimTypes.NameIdentifier),
             User.IsInRole(ApplicationRoles.Admin));
 
@@ -162,5 +163,23 @@ public class DocumentsController : Controller
             : "Document not found.";
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<string> GetCurrentLecturerNameAsync()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (!string.IsNullOrWhiteSpace(user?.FullName))
+        {
+            return user.FullName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(user?.Email))
+        {
+            return user.Email.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(User.Identity?.Name)
+            ? "Lecturer"
+            : User.Identity.Name.Trim();
     }
 }

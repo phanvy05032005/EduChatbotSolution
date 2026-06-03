@@ -62,12 +62,10 @@ public class DocumentService : IDocumentService
     public async Task<DocumentUploadResult> UpdateDocumentAsync(
         int id,
         string fileName,
-        string uploadedBy,
-        string status,
         string? currentUserId = null,
         bool isAdmin = false)
     {
-        var validationMessage = ValidateDocumentMetadata(fileName, uploadedBy, status);
+        var validationMessage = ValidateDocumentMetadata(fileName);
         if (!string.IsNullOrWhiteSpace(validationMessage))
         {
             return new DocumentUploadResult
@@ -90,8 +88,6 @@ public class DocumentService : IDocumentService
         }
 
         document.FileName = fileName.Trim();
-        document.UploadedBy = NormalizeUploadedBy(uploadedBy);
-        document.Status = status.Trim();
 
         await _documentRepository.UpdateAsync(document);
 
@@ -114,7 +110,8 @@ public class DocumentService : IDocumentService
         string? uploadedById,
         string webRootPath)
     {
-        var validationMessage = ValidateFile(originalFileName, fileSize);
+        var safeOriginalFileName = Path.GetFileName(originalFileName)?.Trim() ?? string.Empty;
+        var validationMessage = ValidateFile(safeOriginalFileName, fileSize);
         if (!string.IsNullOrWhiteSpace(validationMessage))
         {
             return new DocumentUploadResult
@@ -124,13 +121,24 @@ public class DocumentService : IDocumentService
             };
         }
 
+        if (!string.IsNullOrWhiteSpace(uploadedById) &&
+            await _documentRepository.ExistsByUploadedByAndFileNameAsync(uploadedById, safeOriginalFileName))
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Bạn đã upload tài liệu có cùng tên file. Vui lòng đổi tên file hoặc xóa tài liệu cũ trước khi upload lại.",
+                Status = StatusFailed
+            };
+        }
+
         string? physicalFilePath = null;
         try
         {
             var uploadFolder = Path.Combine(webRootPath, "uploads", "documents");
             Directory.CreateDirectory(uploadFolder);
 
-            var extension = Path.GetExtension(originalFileName).ToLowerInvariant();
+            var extension = Path.GetExtension(safeOriginalFileName).ToLowerInvariant();
             var storedFileName = $"{Guid.NewGuid():N}{extension}";
             physicalFilePath = Path.Combine(uploadFolder, storedFileName);
 
@@ -170,7 +178,7 @@ public class DocumentService : IDocumentService
 
             var document = new Document
             {
-                FileName = originalFileName,
+                FileName = safeOriginalFileName,
                 StoredFileName = storedFileName,
                 FilePath = $"/uploads/documents/{storedFileName}",
                 UploadedBy = NormalizeUploadedBy(uploadedBy),
@@ -200,7 +208,7 @@ public class DocumentService : IDocumentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Document upload/indexing failed for {FileName}", originalFileName);
+            _logger.LogError(ex, "Document upload/indexing failed for {FileName}", safeOriginalFileName);
 
             if (!string.IsNullOrWhiteSpace(physicalFilePath) && File.Exists(physicalFilePath))
             {
@@ -267,7 +275,7 @@ public class DocumentService : IDocumentService
         return string.Empty;
     }
 
-    private string ValidateDocumentMetadata(string fileName, string uploadedBy, string status)
+    private static string ValidateDocumentMetadata(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -277,21 +285,6 @@ public class DocumentService : IDocumentService
         if (fileName.Trim().Length > 255)
         {
             return "File name cannot exceed 255 characters.";
-        }
-
-        if (string.IsNullOrWhiteSpace(uploadedBy))
-        {
-            return "Lecturer name is required.";
-        }
-
-        if (uploadedBy.Trim().Length > 100)
-        {
-            return "Lecturer name cannot exceed 100 characters.";
-        }
-
-        if (!_documentUploadRules.IsAllowedStatus(status))
-        {
-            return "Invalid document status.";
         }
 
         return string.Empty;

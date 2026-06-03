@@ -13,8 +13,6 @@ public interface IDocumentService
     Task<DocumentUploadResult> UpdateDocumentAsync(
         int id,
         string fileName,
-        string uploadedBy,
-        string status,
         string? currentUserId = null,
         bool isAdmin = false);
 

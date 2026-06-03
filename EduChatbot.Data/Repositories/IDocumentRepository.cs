@@ -10,6 +10,8 @@ public interface IDocumentRepository
 
     Task<Document?> GetByIdAsync(int id, string? uploadedById = null);
 
+    Task<bool> ExistsByUploadedByAndFileNameAsync(string uploadedById, string fileName);
+
     Task AddAsync(Document document);
 
     Task UpdateAsync(Document document);
