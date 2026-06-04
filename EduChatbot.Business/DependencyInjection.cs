@@ -40,6 +40,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<ICourseRepository, CourseRepository>();
         services.AddSingleton<IDocumentUploadRules, DocumentUploadRules>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IAdminService, AdminService>();
@@ -50,6 +51,7 @@ public static class DependencyInjection
         services.Configure<EmbeddingSettings>(configuration.GetSection("Embedding"));
         services.AddHttpClient<IEmbeddingService, OpenRouterEmbeddingService>();
         services.AddHttpClient<IChatService, ChatService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

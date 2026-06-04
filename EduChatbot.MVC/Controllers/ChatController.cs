@@ -22,14 +22,16 @@ public class ChatController : Controller
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var conversations = await _chatService.GetConversationsAsync(userId);
+        ViewBag.Courses = await _chatService.GetCoursesAsync();
         return View(conversations);
     }
 
-    public async Task<IActionResult> Conversation(int? id)
+    public async Task<IActionResult> Conversation(int? id, int? courseId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var conversation = await _chatService.GetOrCreateConversationAsync(id, userId);
+        var conversation = await _chatService.GetOrCreateConversationAsync(id, userId, courseId);
         ViewBag.Conversations = await _chatService.GetConversationsAsync(userId);
+        ViewBag.Courses = await _chatService.GetCoursesAsync();
         return View(conversation);
     }
 

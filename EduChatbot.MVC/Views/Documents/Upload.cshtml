@@ -16,6 +16,17 @@
         <div asp-validation-summary="All" class="role-form-errors"></div>
 
         <div class="role-field">
+            <label for="courseId">Môn học</label>
+            <select id="courseId" name="courseId" required style="width: 100%; padding: 0.8rem; border: 1px solid var(--edu-border); border-radius: 8px; background: rgba(228, 240, 246, 0.045); color: var(--edu-text); font-family: inherit; font-size: 1rem; margin-bottom: 1rem;">
+                <option value="" style="background: var(--edu-bg); color: var(--edu-text);">-- Chọn môn học --</option>
+                @foreach (var course in (ViewBag.Courses as List<EduChatbot.Models.Course> ?? []))
+                {
+                    <option value="@course.Id" style="background: var(--edu-bg); color: var(--edu-text);">[@course.Code] - @course.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="role-field">
             <label for="documentFile">Document file</label>
             <label class="role-file-drop" for="documentFile">
                 <input type="file" id="documentFile" name="documentFile" accept=".pdf,.docx" data-max-size="10485760" />

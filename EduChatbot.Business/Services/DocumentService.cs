@@ -3,6 +3,8 @@ using System.Text;
 using DocumentFormat.OpenXml.Packaging;
 using EduChatbot.Data.Repositories;
 using EduChatbot.Models;
+using EduChatbot.Models.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Pgvector;
 using UglyToad.PdfPig;
@@ -14,25 +16,29 @@ namespace EduChatbot.Business.Services;
 
 public class DocumentService : IDocumentService
 {
-    private const string StatusProcessing = "Processing";
-    private const string StatusCompleted = "Completed";
-    private const string StatusFailed = "Failed";
+    private const double AutoApproveThreshold = 50d;
 
     private readonly IDocumentRepository _documentRepository;
+    private readonly ICourseRepository _courseRepository;
     private readonly IDocumentUploadRules _documentUploadRules;
     private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<DocumentService> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public DocumentService(
         IDocumentRepository documentRepository,
+        ICourseRepository courseRepository,
         IDocumentUploadRules documentUploadRules,
         IEmbeddingService embeddingService,
-        ILogger<DocumentService> logger)
+        ILogger<DocumentService> logger,
+        UserManager<ApplicationUser> userManager)
     {
         _documentRepository = documentRepository;
+        _courseRepository = courseRepository;
         _documentUploadRules = documentUploadRules;
         _embeddingService = embeddingService;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<DocumentListResult> GetDocumentsAsync(string? searchTerm = null, string? currentUserId = null, bool isAdmin = false)
@@ -59,6 +65,11 @@ public class DocumentService : IDocumentService
         return await _documentRepository.GetByIdAsync(id, ownerFilter);
     }
 
+    public async Task<List<Document>> GetPendingReviewDocumentsAsync()
+    {
+        return await _documentRepository.GetPendingReviewAsync();
+    }
+
     public async Task<DocumentUploadResult> UpdateDocumentAsync(
         int id,
         string fileName,
@@ -83,7 +94,7 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = "Document not found.",
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
 
@@ -101,6 +112,96 @@ public class DocumentService : IDocumentService
         };
     }
 
+    public async Task<DocumentUploadResult> ApproveDocumentAsync(int id, string adminId)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Document not found.",
+                Status = DocumentStatuses.Failed
+            };
+        }
+
+        if (document.Status != DocumentStatuses.PendingReview)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Only pending review documents can be approved.",
+                Status = document.Status
+            };
+        }
+
+        var chunks = await CreateDocumentChunksAsync(document.ExtractedText, document.Id);
+
+        document.Status = DocumentStatuses.Approved;
+        document.ReviewedById = adminId;
+        document.ReviewedAt = DateTime.UtcNow;
+        document.ReviewNote = "Approved by admin.";
+        document.ChunkCount = chunks.Count;
+        document.EmbeddingPreview = FormatEmbeddingPreview(chunks.FirstOrDefault()?.Embedding);
+
+        await _documentRepository.UpdateAsync(document);
+        if (chunks.Count > 0)
+        {
+            await _documentRepository.AddChunksAsync(chunks);
+        }
+
+        return new DocumentUploadResult
+        {
+            IsSuccess = true,
+            Message = "Document approved and indexed successfully.",
+            DocumentId = document.Id,
+            ChunkCount = document.ChunkCount,
+            Status = document.Status
+        };
+    }
+
+    public async Task<DocumentUploadResult> RejectDocumentAsync(int id, string adminId, string? reviewNote = null)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Document not found.",
+                Status = DocumentStatuses.Failed
+            };
+        }
+
+        if (document.Status != DocumentStatuses.PendingReview)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Only pending review documents can be rejected.",
+                Status = document.Status
+            };
+        }
+
+        document.Status = DocumentStatuses.Rejected;
+        document.ReviewedById = adminId;
+        document.ReviewedAt = DateTime.UtcNow;
+        document.ReviewNote = string.IsNullOrWhiteSpace(reviewNote)
+            ? "Rejected by admin."
+            : reviewNote.Trim();
+
+        await _documentRepository.UpdateAsync(document);
+
+        return new DocumentUploadResult
+        {
+            IsSuccess = true,
+            Message = "Document rejected successfully.",
+            DocumentId = document.Id,
+            ChunkCount = document.ChunkCount,
+            Status = document.Status
+        };
+    }
+
     public async Task<DocumentUploadResult> UploadDocumentAsync(
         Stream fileStream,
         string originalFileName,
@@ -108,7 +209,8 @@ public class DocumentService : IDocumentService
         long fileSize,
         string uploadedBy,
         string? uploadedById,
-        string webRootPath)
+        string webRootPath,
+        int courseId)
     {
         var safeOriginalFileName = Path.GetFileName(originalFileName)?.Trim() ?? string.Empty;
         var validationMessage = ValidateFile(safeOriginalFileName, fileSize);
@@ -121,6 +223,62 @@ public class DocumentService : IDocumentService
             };
         }
 
+        var course = await _courseRepository.GetByIdAsync(courseId);
+        if (course == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Môn học không tồn tại."
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(course.Description))
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Môn học chưa có mô tả để tính độ phù hợp tài liệu."
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(uploadedById))
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Không xác định được giảng viên đang đăng nhập."
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(uploadedById))
+        {
+            var user = await _userManager.FindByIdAsync(uploadedById);
+            if (user == null)
+            {
+                return new DocumentUploadResult
+                {
+                    IsSuccess = false,
+                    Message = "Không tìm thấy tài khoản giảng viên đang đăng nhập."
+                };
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, ApplicationRoles.Admin);
+            if (!isAdmin)
+            {
+                // Business rule bắt buộc: giảng viên chỉ được upload tài liệu cho môn học đã được Admin phân công.
+                var isAssigned = await _courseRepository.IsLecturerAssignedToCourseAsync(uploadedById, courseId);
+                if (!isAssigned)
+                {
+                    return new DocumentUploadResult
+                    {
+                        IsSuccess = false,
+                        Message = "Bạn không được phân công giảng dạy môn học này."
+                    };
+                }
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(uploadedById) &&
             await _documentRepository.ExistsByUploadedByAndFileNameAsync(uploadedById, safeOriginalFileName))
         {
@@ -128,7 +286,7 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = "Bạn đã upload tài liệu có cùng tên file. Vui lòng đổi tên file hoặc xóa tài liệu cũ trước khi upload lại.",
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
 
@@ -155,26 +313,15 @@ public class DocumentService : IDocumentService
                 {
                     IsSuccess = false,
                     Message = "Không extract được nội dung text từ file. Vui lòng kiểm tra lại PDF/DOCX.",
-                    Status = StatusFailed
+                    Status = DocumentStatuses.Failed
                 };
             }
 
-            var chunks = ChunkText(extractedText);
-            var documentChunks = new List<DocumentChunk>();
-
-            for (var index = 0; index < chunks.Count; index++)
-            {
-                var chunkContent = chunks[index];
-                var embedding = await _embeddingService.CreateEmbeddingAsync(chunkContent);
-
-                documentChunks.Add(new DocumentChunk
-                {
-                    ChunkIndex = index,
-                    Content = chunkContent,
-                    Embedding = new Vector(embedding),
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
+            var matchScore = await CalculateMatchScoreAsync(course, extractedText);
+            var isAutoApproved = matchScore >= AutoApproveThreshold;
+            var documentChunks = isAutoApproved
+                ? await CreateDocumentChunksAsync(extractedText)
+                : [];
 
             var document = new Document
             {
@@ -188,19 +335,26 @@ public class DocumentService : IDocumentService
                 ExtractedText = extractedText,
                 ChunkCount = documentChunks.Count,
                 EmbeddingPreview = FormatEmbeddingPreview(documentChunks.FirstOrDefault()?.Embedding),
-                Status = StatusProcessing,
+                Status = isAutoApproved ? DocumentStatuses.Approved : DocumentStatuses.PendingReview,
                 UploadedAt = DateTime.UtcNow,
+                CourseId = courseId,
+                SubjectCode = course.Code,
+                SubjectName = course.Name,
+                MatchScore = matchScore,
+                ValidationResult = isAutoApproved
+                    ? $"Match score {matchScore:0.00} đạt ngưỡng tự động duyệt {AutoApproveThreshold:0}."
+                    : $"Match score {matchScore:0.00} thấp hơn ngưỡng {AutoApproveThreshold:0}; cần Admin review.",
                 Chunks = documentChunks
             };
 
-            // Vì xử lý đang chạy đồng bộ, document được lưu khi đã extract/chunk/embed xong.
-            document.Status = StatusCompleted;
             await _documentRepository.AddAsync(document);
 
             return new DocumentUploadResult
             {
                 IsSuccess = true,
-                Message = "Upload success",
+                Message = isAutoApproved
+                    ? "Tài liệu phù hợp với môn học và đã được index vào Vector Database."
+                    : "Tài liệu đã được gửi vào hàng chờ Admin review.",
                 DocumentId = document.Id,
                 ChunkCount = document.ChunkCount,
                 Status = document.Status
@@ -223,9 +377,89 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = message,
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
+    }
+
+    private async Task<double> CalculateMatchScoreAsync(Course course, string extractedText)
+    {
+        // Chỉ dùng Embedding Model + Cosine Similarity để tính độ phù hợp, không dùng GPT/Chat để quyết định.
+        var subjectReference = BuildSubjectReferenceText(course);
+        var documentReference = BuildEmbeddingInput(extractedText);
+
+        var subjectEmbedding = await _embeddingService.CreateEmbeddingAsync(subjectReference);
+        var documentEmbedding = await _embeddingService.CreateEmbeddingAsync(documentReference);
+        var cosineSimilarity = CalculateCosineSimilarity(subjectEmbedding, documentEmbedding);
+
+        return Math.Clamp(cosineSimilarity * 100d, 0d, 100d);
+    }
+
+    private static string BuildSubjectReferenceText(Course course)
+    {
+        return $"{course.Code} {course.Name}{Environment.NewLine}{course.Description}".Trim();
+    }
+
+    private static string BuildEmbeddingInput(string text)
+    {
+        const int maxCharacters = 16000;
+
+        if (text.Length <= maxCharacters)
+        {
+            return text;
+        }
+
+        // Cắt ngắn input để tránh gửi tài liệu quá dài vượt giới hạn embedding API.
+        return text[..maxCharacters];
+    }
+
+    private static double CalculateCosineSimilarity(float[] first, float[] second)
+    {
+        if (first.Length == 0 || second.Length == 0 || first.Length != second.Length)
+        {
+            return 0d;
+        }
+
+        double dotProduct = 0;
+        double firstMagnitude = 0;
+        double secondMagnitude = 0;
+
+        for (var index = 0; index < first.Length; index++)
+        {
+            dotProduct += first[index] * second[index];
+            firstMagnitude += first[index] * first[index];
+            secondMagnitude += second[index] * second[index];
+        }
+
+        if (firstMagnitude == 0 || secondMagnitude == 0)
+        {
+            return 0d;
+        }
+
+        return dotProduct / (Math.Sqrt(firstMagnitude) * Math.Sqrt(secondMagnitude));
+    }
+
+    private async Task<List<DocumentChunk>> CreateDocumentChunksAsync(string extractedText, int? documentId = null)
+    {
+        var chunks = ChunkText(extractedText);
+        var documentChunks = new List<DocumentChunk>();
+
+        for (var index = 0; index < chunks.Count; index++)
+        {
+            var chunkContent = chunks[index];
+            var embedding = await _embeddingService.CreateEmbeddingAsync(chunkContent);
+
+            documentChunks.Add(new DocumentChunk
+            {
+                DocumentId = documentId ?? 0,
+                ChunkIndex = index,
+                Content = chunkContent,
+                Embedding = new Vector(embedding),
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        return documentChunks;
     }
 
     public async Task<bool> DeleteDocumentAsync(int id, string webRootPath, string? currentUserId = null, bool isAdmin = false)
@@ -387,5 +621,15 @@ public class DocumentService : IDocumentService
             .Select(value => value.ToString("0.0000", CultureInfo.InvariantCulture));
 
         return string.Join(",", values);
+    }
+
+    public async Task<List<Course>> GetAvailableCoursesForUserAsync(string userId, bool isAdmin)
+    {
+        if (isAdmin)
+        {
+            return await _courseRepository.GetAllAsync();
+        }
+
+        return await _courseRepository.GetAssignedCoursesAsync(userId);
     }
 }

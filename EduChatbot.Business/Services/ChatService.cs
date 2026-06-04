@@ -31,7 +31,7 @@ public class ChatService : IChatService
         return await _chatRepository.GetConversationsByUserAsync(userId);
     }
 
-    public async Task<ChatConversation> GetOrCreateConversationAsync(int? conversationId, string userId)
+    public async Task<ChatConversation> GetOrCreateConversationAsync(int? conversationId, string userId, int? courseId = null)
     {
         if (conversationId.HasValue)
         {
@@ -47,7 +47,8 @@ public class ChatService : IChatService
             UserId = userId,
             Title = "Cuộc trò chuyện mới",
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            CourseId = courseId
         };
 
         return await _chatRepository.AddConversationAsync(conversation);
@@ -65,9 +66,12 @@ public class ChatService : IChatService
         };
         await _chatRepository.AddMessageAsync(userMessage);
 
-        // Bước 2: Tạo embedding cho câu hỏi và search chunks liên quan bằng cosine similarity.
+        var conversation = await _chatRepository.GetConversationWithMessagesAsync(conversationId, userId);
+        int? courseId = conversation?.CourseId;
+
+        // Bước 2: Tạo embedding cho câu hỏi và search chunks liên quan bằng cosine similarity kèm CourseId.
         var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(question);
-        var chunks = await _chatRepository.SearchChunksAsync(questionEmbedding);
+        var chunks = await _chatRepository.SearchChunksAsync(questionEmbedding, courseId);
 
         // Bước 3: Build prompt context từ chunks.
         var context = BuildPromptContext(chunks);
@@ -96,7 +100,7 @@ public class ChatService : IChatService
         await _chatRepository.AddMessageAsync(aiMessage);
 
         // Bước 7: Cập nhật title conversation nếu là message đầu tiên.
-        var conversation = await _chatRepository.GetConversationWithMessagesAsync(conversationId, userId);
+        conversation = await _chatRepository.GetConversationWithMessagesAsync(conversationId, userId);
         if (conversation != null)
         {
             var userMessages = conversation.Messages.Where(m => m.Role == "user").ToList();
@@ -192,5 +196,10 @@ public class ChatService : IChatService
         {
             return $"Xin lỗi, không thể kết nối đến AI: {ex.Message}";
         }
+    }
+
+    public async Task<List<Course>> GetCoursesAsync()
+    {
+        return await _chatRepository.GetCoursesAsync();
     }
 }

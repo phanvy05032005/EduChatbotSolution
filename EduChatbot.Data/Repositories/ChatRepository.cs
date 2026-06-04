@@ -25,6 +25,7 @@ public class ChatRepository : IChatRepository
     public async Task<ChatConversation?> GetConversationWithMessagesAsync(int conversationId, string userId)
     {
         return await _context.ChatConversations
+            .Include(c => c.Course)
             .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
             .FirstOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId);
     }
@@ -48,7 +49,7 @@ public class ChatRepository : IChatRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int topK = 5)
+    public async Task<List<DocumentChunk>> SearchChunksAsync(float[] queryEmbedding, int? courseId, int topK = 5)
     {
         if (queryEmbedding.Length == 0)
         {
@@ -57,11 +58,25 @@ public class ChatRepository : IChatRepository
 
         var vector = new Vector(queryEmbedding);
 
-        return await _context.DocumentChunks
+        var query = _context.DocumentChunks
             .Include(c => c.Document)
-            .Where(c => c.Embedding != null)
+            .Where(c => c.Embedding != null && c.Document!.Status == DocumentStatuses.Approved);
+
+        if (courseId.HasValue)
+        {
+            query = query.Where(c => c.Document!.CourseId == courseId.Value);
+        }
+
+        return await query
             .OrderBy(c => c.Embedding!.CosineDistance(vector))
             .Take(topK)
+            .ToListAsync();
+    }
+
+    public async Task<List<Course>> GetCoursesAsync()
+    {
+        return await _context.Courses
+            .OrderBy(c => c.Code)
             .ToListAsync();
     }
 }

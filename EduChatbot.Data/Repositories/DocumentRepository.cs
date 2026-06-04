@@ -15,7 +15,7 @@ public class DocumentRepository : IDocumentRepository
     public async Task<List<Document>> GetAllAsync(string? searchTerm = null, string? uploadedById = null)
     {
         // Repository là nơi đọc dữ liệu từ database, Controller không gọi DbContext trực tiếp.
-        var query = _context.Documents.AsQueryable();
+        var query = _context.Documents.Include(document => document.Course).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(uploadedById))
         {
@@ -41,9 +41,11 @@ public class DocumentRepository : IDocumentRepository
         return new DocumentDashboardSummary
         {
             TotalDocuments = await _context.Documents.CountAsync(),
-            ReadyDocuments = await _context.Documents.CountAsync(document => document.Status == "Completed"),
-            ProcessingDocuments = await _context.Documents.CountAsync(document => document.Status == "Processing"),
-            FailedDocuments = await _context.Documents.CountAsync(document => document.Status == "Failed"),
+            ReadyDocuments = await _context.Documents.CountAsync(document => document.Status == DocumentStatuses.Approved),
+            ProcessingDocuments = await _context.Documents.CountAsync(document => document.Status == DocumentStatuses.PendingReview),
+            FailedDocuments = await _context.Documents.CountAsync(document =>
+                document.Status == DocumentStatuses.Rejected ||
+                document.Status == DocumentStatuses.Failed),
             TotalChunks = await _context.DocumentChunks.CountAsync()
         };
     }
@@ -51,6 +53,7 @@ public class DocumentRepository : IDocumentRepository
     public async Task<Document?> GetByIdAsync(int id, string? uploadedById = null)
     {
         var query = _context.Documents
+            .Include(document => document.Course)
             .Include(document => document.Chunks.OrderBy(chunk => chunk.ChunkIndex))
             .AsQueryable();
 
@@ -60,6 +63,15 @@ public class DocumentRepository : IDocumentRepository
         }
 
         return await query.FirstOrDefaultAsync(document => document.Id == id);
+    }
+
+    public async Task<List<Document>> GetPendingReviewAsync()
+    {
+        return await _context.Documents
+            .Include(document => document.Course)
+            .Where(document => document.Status == DocumentStatuses.PendingReview)
+            .OrderByDescending(document => document.UploadedAt)
+            .ToListAsync();
     }
 
     public async Task<bool> ExistsByUploadedByAndFileNameAsync(string uploadedById, string fileName)
@@ -75,6 +87,12 @@ public class DocumentRepository : IDocumentRepository
     public async Task AddAsync(Document document)
     {
         await _context.Documents.AddAsync(document);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AddChunksAsync(List<DocumentChunk> chunks)
+    {
+        await _context.DocumentChunks.AddRangeAsync(chunks);
         await _context.SaveChangesAsync();
     }
 

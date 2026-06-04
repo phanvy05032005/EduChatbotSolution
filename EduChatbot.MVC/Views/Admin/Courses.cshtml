@@ -1,0 +1,145 @@
+@model EduChatbot.MVC.Models.AdminCoursesViewModel
+
+@{
+    ViewData["Title"] = "Quản lý Môn học & Phân công";
+}
+
+<div class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <div class="admin-kicker">Môn học</div>
+            <h1>Quản lý <span class="admin-serif">Môn học & Phân công</span></h1>
+            <p>Tạo môn học mới và phân công quyền đăng tải tài liệu cho từng giảng viên.</p>
+        </div>
+    </div>
+
+    @if (TempData["AdminMessage"] != null)
+    {
+        <div class="admin-alert success">@TempData["AdminMessage"]</div>
+    }
+
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="admin-alert danger">@TempData["AdminError"]</div>
+    }
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-top: 1rem;">
+        
+        <!-- Cột trái: Form tạo môn học mới -->
+        <div>
+            <section class="admin-card">
+                <div class="admin-card-header">
+                    <h2>Tạo Môn học mới</h2>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <form asp-controller="Admin" asp-action="CreateCourse" method="post">
+                        @Html.AntiForgeryToken()
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mã môn học (Code)</label>
+                            <input type="text" name="code" placeholder="Ví dụ: PRN222" required 
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Tên môn học (Name)</label>
+                            <input type="text" name="name" placeholder="Ví dụ: C# & .NET Cloud" required 
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mô tả môn học</label>
+                            <textarea name="description" rows="6" required
+                                      placeholder="Ví dụ: ASP.NET Core, MVC, Entity Framework Core, Repository Pattern, Dependency Injection, Authentication, Authorization"
+                                      style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);"></textarea>
+                        </div>
+                        <button type="submit" class="admin-primary-btn" style="width: 100%;">Tạo môn học</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <!-- Cột phải: Danh sách môn học và phân công giảng viên -->
+        <div>
+            <section class="admin-card admin-table-card">
+                <div class="admin-card-header">
+                    <h2>Danh sách môn học</h2>
+                    <span>@Model.Courses.Count môn học</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Mã Môn</th>
+                                <th>Tên Môn</th>
+                                <th>Giảng viên phụ trách</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var course in Model.Courses)
+                            {
+                                <tr>
+                                    <td><code>@course.Code</code></td>
+                                    <td>
+                                        <strong>@course.Name</strong>
+                                        <div style="margin-top:0.35rem; color:rgba(228, 240, 246, 0.68); font-size:0.82rem; line-height:1.4;">
+                                            @(string.IsNullOrWhiteSpace(course.Description)
+                                                ? "Chưa có mô tả môn học."
+                                                : course.Description)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="margin-bottom: 0.5rem;">
+                                            @if (course.LecturerCourses.Count == 0)
+                                            {
+                                                <em style="color: rgba(228, 240, 246, 0.65);">Chưa phân công giảng viên</em>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var lc in course.LecturerCourses)
+                                                {
+                                                    <div style="display: inline-flex; align-items: center; background: rgba(228, 240, 246, 0.08); padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; margin-bottom: 0.2rem; font-size: 0.85rem;">
+                                                        <span style="margin-right: 0.3rem;">👤 @(lc.Lecturer?.FullName ?? lc.Lecturer?.Email)</span>
+                                                        <form asp-controller="Admin" asp-action="RemoveLecturer" method="post" style="display:inline;">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="lecturerId" value="@lc.LecturerId" />
+                                                            <input type="hidden" name="courseId" value="@course.Id" />
+                                                            <button type="submit" style="background:none; border:none; color:red; cursor:pointer; font-weight:bold; font-size: 0.75rem; padding: 0 0.2rem;">×</button>
+                                                        </form>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+
+                                        <!-- Form phân công giảng viên -->
+                                        <form asp-controller="Admin" asp-action="AssignLecturer" method="post" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="courseId" value="@course.Id" />
+                                            <select name="lecturerId" required style="padding: 0.3rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); font-size: 0.85rem;">
+                                                <option value="">-- Chọn giảng viên --</option>
+                                                @foreach (var lec in Model.Lecturers)
+                                                {
+                                                    // Chỉ hiển thị giảng viên chưa được phân công môn này
+                                                    if (!course.LecturerCourses.Any(lc => lc.LecturerId == lec.Id))
+                                                    {
+                                                        <option value="@lec.Id">@lec.FullName (@lec.Email)</option>
+                                                    }
+                                                }
+                                            </select>
+                                            <button type="submit" style="background: var(--admin-primary); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Phân công</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-controller="Admin" asp-action="DeleteCourse" method="post" onsubmit="return confirm('Xóa môn học này sẽ làm mất liên kết với các tài liệu đã tải lên?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@course.Id" />
+                                            <button type="submit" class="danger" style="background:none; border:none; color:var(--admin-danger); cursor:pointer; font-size: 0.9rem;">Xóa</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

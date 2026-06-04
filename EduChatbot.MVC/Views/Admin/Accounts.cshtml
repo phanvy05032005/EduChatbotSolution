@@ -28,6 +28,27 @@
         <div class="admin-alert danger">@TempData["AdminError"]</div>
     }
 
+    @if (!isLecturer)
+    {
+        <section class="admin-card mb-4" style="margin-bottom: 2rem;">
+            <div class="admin-card-header">
+                <h2>Nhập tài khoản sinh viên bằng Excel</h2>
+            </div>
+            <div style="padding: 1.5rem;">
+                <form asp-controller="Admin" asp-action="ImportStudents" method="post" enctype="multipart/form-data" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    @Html.AntiForgeryToken()
+                    <input type="file" name="excelFile" accept=".xlsx" required style="padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
+                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; cursor: pointer; color: var(--edu-text); margin: 0;">
+                        <input type="checkbox" name="sendEmail" value="true" style="cursor: pointer;" />
+                        Gửi email thông báo
+                    </label>
+                    <button type="submit" class="admin-primary-btn" style="height: auto;">Tải lên & Nhập danh sách</button>
+                </form>
+                <small style="display: block; margin-top: 0.5rem; color: rgba(228, 240, 246, 0.65);">Yêu cầu file Excel (.xlsx) có chứa các cột: <strong>Email</strong> và <strong>FullName</strong> (hoặc Họ tên).</small>
+            </div>
+        </section>
+    }
+
     <form method="get" class="admin-search">
         <div class="admin-search-input">
             <span aria-hidden="true">⌕</span>
