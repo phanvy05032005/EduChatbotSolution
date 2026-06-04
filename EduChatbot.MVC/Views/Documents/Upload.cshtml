@@ -29,10 +29,11 @@
         <div class="role-field">
             <label for="documentFile">Document file</label>
             <label class="role-file-drop" for="documentFile">
-                <input type="file" id="documentFile" name="documentFile" accept=".pdf,.docx" />
+                <input type="file" id="documentFile" name="documentFile" accept=".pdf,.docx" data-max-size="10485760" />
                 <span>Choose PDF or DOCX</span>
                 <small>Maximum file size: 10 MB</small>
             </label>
+            <span id="documentFileValidation" class="role-validation"></span>
         </div>
 
         <div class="role-form-actions">
@@ -45,14 +46,34 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        document.getElementById('documentFile').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose PDF or DOCX';
+        const documentInput = document.getElementById('documentFile');
+        const validationMessage = document.getElementById('documentFileValidation');
+
+        documentInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileName = file ? file.name : 'Choose PDF or DOCX';
+            const maxSize = Number(e.target.dataset.maxSize);
+
             e.target.nextElementSibling.textContent = fileName;
+            validationMessage.textContent = '';
+
+            if (file && file.size > maxSize) {
+                validationMessage.textContent = 'File không được vượt quá 10 MB.';
+            }
         });
 
         document.querySelector('form.role-form-card').addEventListener('submit', function(e) {
+            const file = documentInput.files[0];
+            const maxSize = Number(documentInput.dataset.maxSize);
+
+            if (file && file.size > maxSize) {
+                e.preventDefault();
+                validationMessage.textContent = 'File không được vượt quá 10 MB.';
+                return;
+            }
+
             const btn = this.querySelector('button[type="submit"]');
-            if(btn && document.getElementById('documentFile').files.length > 0) {
+            if(btn && documentInput.files.length > 0) {
                 btn.disabled = true;
                 btn.textContent = 'Uploading and indexing... please wait';
                 btn.style.opacity = '0.7';

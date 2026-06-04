@@ -10,6 +10,8 @@ namespace EduChatbot.MVC.Controllers;
 
 public class DocumentsController : Controller
 {
+    private const long UploadRequestLimitBytes = 50 * 1024 * 1024;
+
     private readonly IDocumentService _documentService;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -37,6 +39,8 @@ public class DocumentsController : Controller
     [HttpPost]
     [Authorize(Roles = ApplicationRoles.DocumentManagers)]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(UploadRequestLimitBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = UploadRequestLimitBytes)]
     public async Task<IActionResult> Upload(IFormFile? documentFile, int courseId)
     {
         if (courseId <= 0)
@@ -71,7 +75,7 @@ public class DocumentsController : Controller
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError("documentFile", result.Message);
+            ModelState.AddModelError(string.Empty, result.Message);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var isAdmin = User.IsInRole(ApplicationRoles.Admin);
             ViewBag.Courses = await _documentService.GetAvailableCoursesForUserAsync(userId, isAdmin);

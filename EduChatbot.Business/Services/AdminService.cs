@@ -408,11 +408,11 @@ Hệ thống EduChatbot";
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<AdminOperationResult> CreateCourseAsync(string code, string name)
+    public async Task<AdminOperationResult> CreateCourseAsync(string code, string name, string description)
     {
-        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(description))
         {
-            return Failure("Mã môn học và tên môn học không được để trống.");
+            return Failure("Mã môn học, tên môn học và mô tả môn học không được để trống.");
         }
 
         var normalizedCode = code.Trim().ToUpperInvariant();
@@ -425,7 +425,8 @@ Hệ thống EduChatbot";
         var course = new Course
         {
             Code = normalizedCode,
-            Name = name.Trim()
+            Name = name.Trim(),
+            Description = description.Trim()
         };
 
         _context.Courses.Add(course);

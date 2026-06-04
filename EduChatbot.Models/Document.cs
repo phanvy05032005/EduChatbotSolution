@@ -50,7 +50,20 @@ public class Document
 
     public Course? Course { get; set; }
 
+    public string SubjectCode { get; set; } = string.Empty;
+
+    public string SubjectName { get; set; } = string.Empty;
+
+    public double? MatchScore { get; set; }
+
     public string? ValidationResult { get; set; }
+
+    [MaxLength(450)]
+    public string? ReviewedById { get; set; }
+
+    public DateTime? ReviewedAt { get; set; }
+
+    public string? ReviewNote { get; set; }
 
     // Một Document có nhiều chunk để phục vụ RAG/chatbot.
     public List<DocumentChunk> Chunks { get; set; } = [];

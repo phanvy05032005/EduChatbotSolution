@@ -12,13 +12,16 @@ namespace EduChatbot.MVC.Controllers;
 public class AdminController : Controller
 {
     private readonly IAdminService _adminService;
+    private readonly IDocumentService _documentService;
     private readonly IWebHostEnvironment _webHostEnvironment;
 
     public AdminController(
         IAdminService adminService,
+        IDocumentService documentService,
         IWebHostEnvironment webHostEnvironment)
     {
         _adminService = adminService;
+        _documentService = documentService;
         _webHostEnvironment = webHostEnvironment;
     }
 
@@ -336,15 +339,15 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateCourse(string code, string name)
+    public async Task<IActionResult> CreateCourse(string code, string name, string description)
     {
-        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(description))
         {
-            TempData["AdminError"] = "Mã môn học và tên môn học không được để trống.";
+            TempData["AdminError"] = "Mã môn học, tên môn học và mô tả môn học không được để trống.";
             return RedirectToAction(nameof(Courses));
         }
 
-        var result = await _adminService.CreateCourseAsync(code, name);
+        var result = await _adminService.CreateCourseAsync(code, name, description);
         if (result.IsSuccess)
         {
             TempData["AdminMessage"] = result.Message;
@@ -355,6 +358,32 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Courses));
+    }
+
+    public async Task<IActionResult> PendingDocuments()
+    {
+        var documents = await _documentService.GetPendingReviewDocumentsAsync();
+        return View(documents);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveDocument(int id)
+    {
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var result = await _documentService.ApproveDocumentAsync(id, adminId);
+        TempData[result.IsSuccess ? "AdminMessage" : "AdminError"] = result.Message;
+        return RedirectToAction(nameof(PendingDocuments));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectDocument(int id, string? reviewNote)
+    {
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var result = await _documentService.RejectDocumentAsync(id, adminId, reviewNote);
+        TempData[result.IsSuccess ? "AdminMessage" : "AdminError"] = result.Message;
+        return RedirectToAction(nameof(PendingDocuments));
     }
 
     [HttpPost]

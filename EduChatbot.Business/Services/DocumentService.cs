@@ -1,16 +1,12 @@
 using System.Globalization;
 using System.Text;
 using DocumentFormat.OpenXml.Packaging;
-using EduChatbot.Data;
 using EduChatbot.Data.Repositories;
 using EduChatbot.Models;
 using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Pgvector;
-using System.Net.Http;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using OpenXmlParagraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
@@ -20,36 +16,28 @@ namespace EduChatbot.Business.Services;
 
 public class DocumentService : IDocumentService
 {
-    private const string StatusProcessing = "Processing";
-    private const string StatusCompleted = "Completed";
-    private const string StatusFailed = "Failed";
+    private const double AutoApproveThreshold = 50d;
 
     private readonly IDocumentRepository _documentRepository;
+    private readonly ICourseRepository _courseRepository;
     private readonly IDocumentUploadRules _documentUploadRules;
     private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<DocumentService> _logger;
-    private readonly ApplicationDbContext _context;
-    private readonly HttpClient _httpClient;
-    private readonly OpenRouterSettings _settings;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public DocumentService(
         IDocumentRepository documentRepository,
+        ICourseRepository courseRepository,
         IDocumentUploadRules documentUploadRules,
         IEmbeddingService embeddingService,
         ILogger<DocumentService> logger,
-        ApplicationDbContext context,
-        HttpClient httpClient,
-        IOptions<OpenRouterSettings> settings,
         UserManager<ApplicationUser> userManager)
     {
         _documentRepository = documentRepository;
+        _courseRepository = courseRepository;
         _documentUploadRules = documentUploadRules;
         _embeddingService = embeddingService;
         _logger = logger;
-        _context = context;
-        _httpClient = httpClient;
-        _settings = settings.Value;
         _userManager = userManager;
     }
 
@@ -77,6 +65,11 @@ public class DocumentService : IDocumentService
         return await _documentRepository.GetByIdAsync(id, ownerFilter);
     }
 
+    public async Task<List<Document>> GetPendingReviewDocumentsAsync()
+    {
+        return await _documentRepository.GetPendingReviewAsync();
+    }
+
     public async Task<DocumentUploadResult> UpdateDocumentAsync(
         int id,
         string fileName,
@@ -101,7 +94,7 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = "Document not found.",
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
 
@@ -113,6 +106,96 @@ public class DocumentService : IDocumentService
         {
             IsSuccess = true,
             Message = "Document updated successfully.",
+            DocumentId = document.Id,
+            ChunkCount = document.ChunkCount,
+            Status = document.Status
+        };
+    }
+
+    public async Task<DocumentUploadResult> ApproveDocumentAsync(int id, string adminId)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Document not found.",
+                Status = DocumentStatuses.Failed
+            };
+        }
+
+        if (document.Status != DocumentStatuses.PendingReview)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Only pending review documents can be approved.",
+                Status = document.Status
+            };
+        }
+
+        var chunks = await CreateDocumentChunksAsync(document.ExtractedText, document.Id);
+
+        document.Status = DocumentStatuses.Approved;
+        document.ReviewedById = adminId;
+        document.ReviewedAt = DateTime.UtcNow;
+        document.ReviewNote = "Approved by admin.";
+        document.ChunkCount = chunks.Count;
+        document.EmbeddingPreview = FormatEmbeddingPreview(chunks.FirstOrDefault()?.Embedding);
+
+        await _documentRepository.UpdateAsync(document);
+        if (chunks.Count > 0)
+        {
+            await _documentRepository.AddChunksAsync(chunks);
+        }
+
+        return new DocumentUploadResult
+        {
+            IsSuccess = true,
+            Message = "Document approved and indexed successfully.",
+            DocumentId = document.Id,
+            ChunkCount = document.ChunkCount,
+            Status = document.Status
+        };
+    }
+
+    public async Task<DocumentUploadResult> RejectDocumentAsync(int id, string adminId, string? reviewNote = null)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document == null)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Document not found.",
+                Status = DocumentStatuses.Failed
+            };
+        }
+
+        if (document.Status != DocumentStatuses.PendingReview)
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Only pending review documents can be rejected.",
+                Status = document.Status
+            };
+        }
+
+        document.Status = DocumentStatuses.Rejected;
+        document.ReviewedById = adminId;
+        document.ReviewedAt = DateTime.UtcNow;
+        document.ReviewNote = string.IsNullOrWhiteSpace(reviewNote)
+            ? "Rejected by admin."
+            : reviewNote.Trim();
+
+        await _documentRepository.UpdateAsync(document);
+
+        return new DocumentUploadResult
+        {
+            IsSuccess = true,
+            Message = "Document rejected successfully.",
             DocumentId = document.Id,
             ChunkCount = document.ChunkCount,
             Status = document.Status
@@ -140,7 +223,7 @@ public class DocumentService : IDocumentService
             };
         }
 
-        var course = await _context.Courses.FindAsync(courseId);
+        var course = await _courseRepository.GetByIdAsync(courseId);
         if (course == null)
         {
             return new DocumentUploadResult
@@ -150,23 +233,48 @@ public class DocumentService : IDocumentService
             };
         }
 
+        if (string.IsNullOrWhiteSpace(course.Description))
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Môn học chưa có mô tả để tính độ phù hợp tài liệu."
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(uploadedById))
+        {
+            return new DocumentUploadResult
+            {
+                IsSuccess = false,
+                Message = "Không xác định được giảng viên đang đăng nhập."
+            };
+        }
+
         if (!string.IsNullOrWhiteSpace(uploadedById))
         {
             var user = await _userManager.FindByIdAsync(uploadedById);
-            if (user != null)
+            if (user == null)
             {
-                var isAdmin = await _userManager.IsInRoleAsync(user, ApplicationRoles.Admin);
-                if (!isAdmin)
+                return new DocumentUploadResult
                 {
-                    var isAssigned = await _context.LecturerCourses.AnyAsync(lc => lc.LecturerId == uploadedById && lc.CourseId == courseId);
-                    if (!isAssigned)
+                    IsSuccess = false,
+                    Message = "Không tìm thấy tài khoản giảng viên đang đăng nhập."
+                };
+            }
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, ApplicationRoles.Admin);
+            if (!isAdmin)
+            {
+                // Business rule bắt buộc: giảng viên chỉ được upload tài liệu cho môn học đã được Admin phân công.
+                var isAssigned = await _courseRepository.IsLecturerAssignedToCourseAsync(uploadedById, courseId);
+                if (!isAssigned)
+                {
+                    return new DocumentUploadResult
                     {
-                        return new DocumentUploadResult
-                        {
-                            IsSuccess = false,
-                            Message = "Bạn không được phân công giảng dạy môn học này."
-                        };
-                    }
+                        IsSuccess = false,
+                        Message = "Bạn không được phân công giảng dạy môn học này."
+                    };
                 }
             }
         }
@@ -178,7 +286,7 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = "Bạn đã upload tài liệu có cùng tên file. Vui lòng đổi tên file hoặc xóa tài liệu cũ trước khi upload lại.",
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
 
@@ -205,26 +313,15 @@ public class DocumentService : IDocumentService
                 {
                     IsSuccess = false,
                     Message = "Không extract được nội dung text từ file. Vui lòng kiểm tra lại PDF/DOCX.",
-                    Status = StatusFailed
+                    Status = DocumentStatuses.Failed
                 };
             }
 
-            var chunks = ChunkText(extractedText);
-            var documentChunks = new List<DocumentChunk>();
-
-            for (var index = 0; index < chunks.Count; index++)
-            {
-                var chunkContent = chunks[index];
-                var embedding = await _embeddingService.CreateEmbeddingAsync(chunkContent);
-
-                documentChunks.Add(new DocumentChunk
-                {
-                    ChunkIndex = index,
-                    Content = chunkContent,
-                    Embedding = new Vector(embedding),
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
+            var matchScore = await CalculateMatchScoreAsync(course, extractedText);
+            var isAutoApproved = matchScore >= AutoApproveThreshold;
+            var documentChunks = isAutoApproved
+                ? await CreateDocumentChunksAsync(extractedText)
+                : [];
 
             var document = new Document
             {
@@ -238,35 +335,26 @@ public class DocumentService : IDocumentService
                 ExtractedText = extractedText,
                 ChunkCount = documentChunks.Count,
                 EmbeddingPreview = FormatEmbeddingPreview(documentChunks.FirstOrDefault()?.Embedding),
-                Status = "Analyzing",
+                Status = isAutoApproved ? DocumentStatuses.Approved : DocumentStatuses.PendingReview,
                 UploadedAt = DateTime.UtcNow,
                 CourseId = courseId,
+                SubjectCode = course.Code,
+                SubjectName = course.Name,
+                MatchScore = matchScore,
+                ValidationResult = isAutoApproved
+                    ? $"Match score {matchScore:0.00} đạt ngưỡng tự động duyệt {AutoApproveThreshold:0}."
+                    : $"Match score {matchScore:0.00} thấp hơn ngưỡng {AutoApproveThreshold:0}; cần Admin review.",
                 Chunks = documentChunks
             };
-
-            var existingDocs = await _context.Documents
-                .Where(d => d.CourseId == courseId && d.Status == "Valid")
-                .ToListAsync();
-
-            var aiResult = await ValidateDocumentWithAiAsync(extractedText, course.Code, course.Name, existingDocs);
-            if (aiResult.IsValid)
-            {
-                document.Status = "Valid";
-            }
-            else
-            {
-                document.Status = "Invalid";
-            }
-            document.ValidationResult = aiResult.Reason;
 
             await _documentRepository.AddAsync(document);
 
             return new DocumentUploadResult
             {
                 IsSuccess = true,
-                Message = document.Status == "Valid"
-                    ? "Tài liệu hợp lệ và đã được phê duyệt thành công."
-                    : $"Tài liệu không hợp lệ (Phát hiện bởi AI): {aiResult.Reason}",
+                Message = isAutoApproved
+                    ? "Tài liệu phù hợp với môn học và đã được index vào Vector Database."
+                    : "Tài liệu đã được gửi vào hàng chờ Admin review.",
                 DocumentId = document.Id,
                 ChunkCount = document.ChunkCount,
                 Status = document.Status
@@ -289,112 +377,90 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = false,
                 Message = message,
-                Status = StatusFailed
+                Status = DocumentStatuses.Failed
             };
         }
     }
 
-    private async Task<LlmValidationResult> ValidateDocumentWithAiAsync(string documentText, string courseCode, string courseName, List<Document> existingDocs)
+    private async Task<double> CalculateMatchScoreAsync(Course course, string extractedText)
     {
-        var existingDocsContext = new StringBuilder();
-        if (existingDocs.Count > 0)
+        // Chỉ dùng Embedding Model + Cosine Similarity để tính độ phù hợp, không dùng GPT/Chat để quyết định.
+        var subjectReference = BuildSubjectReferenceText(course);
+        var documentReference = BuildEmbeddingInput(extractedText);
+
+        var subjectEmbedding = await _embeddingService.CreateEmbeddingAsync(subjectReference);
+        var documentEmbedding = await _embeddingService.CreateEmbeddingAsync(documentReference);
+        var cosineSimilarity = CalculateCosineSimilarity(subjectEmbedding, documentEmbedding);
+
+        return Math.Clamp(cosineSimilarity * 100d, 0d, 100d);
+    }
+
+    private static string BuildSubjectReferenceText(Course course)
+    {
+        return $"{course.Code} {course.Name}{Environment.NewLine}{course.Description}".Trim();
+    }
+
+    private static string BuildEmbeddingInput(string text)
+    {
+        const int maxCharacters = 16000;
+
+        if (text.Length <= maxCharacters)
         {
-            existingDocsContext.AppendLine("Dưới đây là các tài liệu học tập ĐÃ CÓ của môn học này:");
-            foreach (var doc in existingDocs)
-            {
-                existingDocsContext.AppendLine($"--- Tên tài liệu: {doc.FileName} ---");
-                var previewText = doc.ExtractedText.Length > 2000
-                    ? doc.ExtractedText[..2000] + "..."
-                    : doc.ExtractedText;
-                existingDocsContext.AppendLine(previewText);
-                existingDocsContext.AppendLine();
-            }
+            return text;
         }
-        else
+
+        // Cắt ngắn input để tránh gửi tài liệu quá dài vượt giới hạn embedding API.
+        return text[..maxCharacters];
+    }
+
+    private static double CalculateCosineSimilarity(float[] first, float[] second)
+    {
+        if (first.Length == 0 || second.Length == 0 || first.Length != second.Length)
         {
-            existingDocsContext.AppendLine("Chưa có tài liệu nào khác được upload cho môn học này.");
+            return 0d;
         }
 
-        var systemPrompt = @"Bạn là chuyên gia kiểm định chất lượng tài liệu học thuật của EduChatbot.
-Nhiệm vụ của bạn là đánh giá xem tài liệu học tập mới tải lên có hợp lệ hay không.
-Quy tắc đánh giá:
-1. Tính liên quan: Tài liệu mới phải thực sự liên quan đến môn học có tên và mã được cung cấp. Nếu tài liệu lạc đề (ví dụ: công thức nấu ăn, truyện cười, hoặc tài liệu của môn học khác hoàn toàn), hãy đánh dấu là không hợp lệ.
-2. Tính nhất quán: Đối chiếu tài liệu mới với danh sách tài liệu cũ (nếu có). Phát hiện xem có mâu thuẫn thông tin nào không (ví dụ: tài liệu cũ nói bài thi 60 phút, tài liệu mới nói bài thi 90 phút; hoặc tài liệu cũ viết định nghĩa A là B, tài liệu mới viết định nghĩa A là C). Nếu có mâu thuẫn, hãy đánh dấu là không hợp lệ và chỉ rõ điểm mâu thuẫn, tài liệu nào đúng tài liệu nào sai (giả định tài liệu cũ là đúng).
+        double dotProduct = 0;
+        double firstMagnitude = 0;
+        double secondMagnitude = 0;
 
-Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có cấu trúc như sau:
-{
-  ""isValid"": true hoặc false,
-  ""reason"": ""Lý do chi tiết vì sao tài liệu hợp lệ hoặc không hợp lệ. Nếu không hợp lệ và có mâu thuẫn, hãy chỉ rõ điểm mâu thuẫn với tài liệu cũ nào (ghi rõ tên tài liệu)""
-}";
-
-        var userPrompt = $@"Môn học: {courseCode} - {courseName}
-
-{existingDocsContext}
-
---- TÀI LIỆU MỚI TẢI LÊN ---
-{documentText}
-";
-
-        try
+        for (var index = 0; index < first.Length; index++)
         {
-            var requestBody = new
+            dotProduct += first[index] * second[index];
+            firstMagnitude += first[index] * first[index];
+            secondMagnitude += second[index] * second[index];
+        }
+
+        if (firstMagnitude == 0 || secondMagnitude == 0)
+        {
+            return 0d;
+        }
+
+        return dotProduct / (Math.Sqrt(firstMagnitude) * Math.Sqrt(secondMagnitude));
+    }
+
+    private async Task<List<DocumentChunk>> CreateDocumentChunksAsync(string extractedText, int? documentId = null)
+    {
+        var chunks = ChunkText(extractedText);
+        var documentChunks = new List<DocumentChunk>();
+
+        for (var index = 0; index < chunks.Count; index++)
+        {
+            var chunkContent = chunks[index];
+            var embedding = await _embeddingService.CreateEmbeddingAsync(chunkContent);
+
+            documentChunks.Add(new DocumentChunk
             {
-                model = _settings.Model,
-                messages = new[]
-                {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user", content = userPrompt }
-                },
-                response_format = new { type = "json_object" }
-            };
-
-            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.BaseUrl)
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-            httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _settings.ApiKey);
-
-            var response = await _httpClient.SendAsync(httpRequest);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return new LlmValidationResult { IsValid = true, Reason = $"Không thể kiểm định qua AI (HTTP {(int)response.StatusCode}). Tạm thời phê duyệt." };
-            }
-
-            using var doc = System.Text.Json.JsonDocument.Parse(responseBody);
-            var content = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
-
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                return new LlmValidationResult { IsValid = true, Reason = "AI trả về phản hồi rỗng. Tạm thời phê duyệt." };
-            }
-
-            var result = System.Text.Json.JsonSerializer.Deserialize<LlmValidationResult>(content, new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
+                DocumentId = documentId ?? 0,
+                ChunkIndex = index,
+                Content = chunkContent,
+                Embedding = new Vector(embedding),
+                CreatedAt = DateTime.UtcNow
             });
-
-            return result ?? new LlmValidationResult { IsValid = true, Reason = "Không thể phân tích phản hồi JSON của AI. Tạm thời phê duyệt." };
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Lỗi khi gọi AI kiểm định tài liệu.");
-            return new LlmValidationResult { IsValid = true, Reason = $"Lỗi kết nối AI: {ex.Message}. Tạm thời phê duyệt." };
-        }
-    }
 
-    private class LlmValidationResult
-    {
-        public bool IsValid { get; set; }
-        public string Reason { get; set; } = string.Empty;
+        return documentChunks;
     }
-
 
     public async Task<bool> DeleteDocumentAsync(int id, string webRootPath, string? currentUserId = null, bool isAdmin = false)
     {
@@ -561,15 +627,9 @@ Bạn PHẢI trả về kết quả dưới định dạng JSON duy nhất, có 
     {
         if (isAdmin)
         {
-            return await _context.Courses
-                .OrderBy(c => c.Code)
-                .ToListAsync();
+            return await _courseRepository.GetAllAsync();
         }
 
-        return await _context.LecturerCourses
-            .Where(lc => lc.LecturerId == userId)
-            .Select(lc => lc.Course!)
-            .OrderBy(c => c.Code)
-            .ToListAsync();
+        return await _courseRepository.GetAssignedCoursesAsync(userId);
     }
 }

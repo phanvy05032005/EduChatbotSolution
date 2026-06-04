@@ -9,4 +9,5 @@ public class AdminCoursesViewModel
     public List<ApplicationUser> Lecturers { get; set; } = [];
     public string? NewCourseCode { get; set; }
     public string? NewCourseName { get; set; }
+    public string? NewCourseDescription { get; set; }
 }

@@ -14,6 +14,8 @@ public class Course
     [MaxLength(255)]
     public string Name { get; set; } = string.Empty;
 
+    public string Description { get; set; } = string.Empty;
+
     public List<LecturerCourse> LecturerCourses { get; set; } = [];
 
     public List<Document> Documents { get; set; } = [];

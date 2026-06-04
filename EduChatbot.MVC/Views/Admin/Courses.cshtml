@@ -44,6 +44,12 @@
                             <input type="text" name="name" placeholder="Ví dụ: C# & .NET Cloud" required 
                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
                         </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mô tả môn học</label>
+                            <textarea name="description" rows="6" required
+                                      placeholder="Ví dụ: ASP.NET Core, MVC, Entity Framework Core, Repository Pattern, Dependency Injection, Authentication, Authorization"
+                                      style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);"></textarea>
+                        </div>
                         <button type="submit" class="admin-primary-btn" style="width: 100%;">Tạo môn học</button>
                     </form>
                 </div>
@@ -72,7 +78,14 @@
                             {
                                 <tr>
                                     <td><code>@course.Code</code></td>
-                                    <td><strong>@course.Name</strong></td>
+                                    <td>
+                                        <strong>@course.Name</strong>
+                                        <div style="margin-top:0.35rem; color:rgba(228, 240, 246, 0.68); font-size:0.82rem; line-height:1.4;">
+                                            @(string.IsNullOrWhiteSpace(course.Description)
+                                                ? "Chưa có mô tả môn học."
+                                                : course.Description)
+                                        </div>
+                                    </td>
                                     <td>
                                         <div style="margin-bottom: 0.5rem;">
                                             @if (course.LecturerCourses.Count == 0)

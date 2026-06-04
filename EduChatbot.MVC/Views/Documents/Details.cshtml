@@ -31,11 +31,15 @@
     <div class="role-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
         <article>
             <span>Status</span>
-            <strong style="color: @(Model.Status == "Valid" ? "var(--edu-success)" : Model.Status == "Invalid" ? "var(--edu-danger)" : "inherit")">@Model.Status</strong>
+            <strong style="color: @(Model.Status == EduChatbot.Models.DocumentStatuses.Approved ? "var(--edu-success)" : Model.Status == EduChatbot.Models.DocumentStatuses.Rejected ? "var(--edu-danger)" : "inherit")">@Model.Status</strong>
         </article>
         <article>
             <span>Môn học</span>
-            <strong>@(Model.Course != null ? $"[{Model.Course.Code}] {Model.Course.Name}" : "N/A")</strong>
+            <strong>@(!string.IsNullOrWhiteSpace(Model.SubjectCode) ? $"[{Model.SubjectCode}] {Model.SubjectName}" : Model.Course != null ? $"[{Model.Course.Code}] {Model.Course.Name}" : "N/A")</strong>
+        </article>
+        <article>
+            <span>Match Score</span>
+            <strong>@(Model.MatchScore.HasValue ? Model.MatchScore.Value.ToString("0.00") : "N/A")</strong>
         </article>
         <article>
             <span>Chunks</span>
@@ -53,10 +57,10 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.ValidationResult))
     {
-        var isInvalid = Model.Status == "Invalid";
-        <div class="role-alert" style="margin-top: 1.5rem; padding: 1.2rem; border-radius: 8px; border-left: 5px solid @(isInvalid ? "var(--edu-danger)" : "var(--edu-success)"); background: @(isInvalid ? "rgba(255, 154, 162, 0.08)" : "rgba(168, 230, 207, 0.08)"); color: var(--edu-text);">
-            <h4 style="margin-top: 0; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: @(isInvalid ? "var(--edu-danger)" : "var(--edu-success)");">
-                <span>🔍</span> Kết quả phân tích & kiểm định AI:
+        var isRejected = Model.Status == EduChatbot.Models.DocumentStatuses.Rejected;
+        <div class="role-alert" style="margin-top: 1.5rem; padding: 1.2rem; border-radius: 8px; border-left: 5px solid @(isRejected ? "var(--edu-danger)" : "var(--edu-success)"); background: @(isRejected ? "rgba(255, 154, 162, 0.08)" : "rgba(168, 230, 207, 0.08)"); color: var(--edu-text);">
+            <h4 style="margin-top: 0; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: @(isRejected ? "var(--edu-danger)" : "var(--edu-success)");">
+                <span>Similarity</span> Kết quả Match Score:
             </h4>
             <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; white-space: pre-line;">@Model.ValidationResult</p>
         </div>

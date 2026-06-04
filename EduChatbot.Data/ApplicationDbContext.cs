@@ -52,7 +52,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .HasColumnName("uploaded_at")
                 .HasColumnType("timestamp with time zone");
             entity.Property(document => document.CourseId).HasColumnName("course_id");
+            entity.Property(document => document.SubjectCode).HasColumnName("subject_code").HasMaxLength(50);
+            entity.Property(document => document.SubjectName).HasColumnName("subject_name").HasMaxLength(255);
+            entity.Property(document => document.MatchScore).HasColumnName("match_score");
             entity.Property(document => document.ValidationResult).HasColumnName("validation_result");
+            entity.Property(document => document.ReviewedById).HasColumnName("reviewed_by_id").HasMaxLength(450);
+            entity.Property(document => document.ReviewedAt)
+                .HasColumnName("reviewed_at")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(document => document.ReviewNote).HasColumnName("review_note");
 
             entity.HasMany(document => document.Chunks)
                 .WithOne(chunk => chunk.Document)
@@ -142,6 +150,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(c => c.Id).HasColumnName("id");
             entity.Property(c => c.Code).HasColumnName("code").IsRequired().HasMaxLength(50);
             entity.Property(c => c.Name).HasColumnName("name").IsRequired().HasMaxLength(255);
+            entity.Property(c => c.Description).HasColumnName("description");
             entity.HasIndex(c => c.Code).IsUnique();
         });
 

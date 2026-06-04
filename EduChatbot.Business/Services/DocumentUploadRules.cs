@@ -1,9 +1,17 @@
+using EduChatbot.Models;
+
 namespace EduChatbot.Business.Services;
 
 public class DocumentUploadRules : IDocumentUploadRules
 {
     private static readonly string[] Extensions = [".pdf", ".docx"];
-    private static readonly string[] Statuses = ["Processing", "Completed", "Failed"];
+    private static readonly string[] Statuses =
+    [
+        DocumentStatuses.Approved,
+        DocumentStatuses.PendingReview,
+        DocumentStatuses.Rejected,
+        DocumentStatuses.Failed
+    ];
 
     public long MaxFileSizeBytes { get; } = 10 * 1024 * 1024;
 

@@ -60,7 +60,7 @@ public class ChatRepository : IChatRepository
 
         var query = _context.DocumentChunks
             .Include(c => c.Document)
-            .Where(c => c.Embedding != null && c.Document!.Status == "Valid");
+            .Where(c => c.Embedding != null && c.Document!.Status == DocumentStatuses.Approved);
 
         if (courseId.HasValue)
         {

@@ -29,7 +29,7 @@ public interface IAdminService
 
     Task<Course?> GetCourseByIdAsync(int id);
 
-    Task<AdminOperationResult> CreateCourseAsync(string code, string name);
+    Task<AdminOperationResult> CreateCourseAsync(string code, string name, string description);
 
     Task<AdminOperationResult> DeleteCourseAsync(int id);
 
