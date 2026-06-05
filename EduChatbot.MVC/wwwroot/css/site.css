@@ -1262,240 +1262,151 @@ body.app-shell:has(.role-shell) {
   padding: 1.25rem;
 }
 
-/* ===== Profile page redesign ===== */
-@keyframes profileFadeUp {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes profilePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.2); }
-  50%      { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-}
-
-/* ---- Base (Student light theme) ---- */
 .account-profile-page {
-  width: min(100% - 2rem, 1080px);
+  width: min(100% - 2rem, 1120px);
   margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 3rem) 0;
-  color: #1f2937;
+  padding: clamp(2rem, 5vw, 4rem) 0;
+  color: #172033;
 }
 
 .account-profile-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  margin-bottom: 1.25rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  margin-bottom: 1rem;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
   padding: clamp(1.25rem, 3vw, 1.75rem);
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  animation: profileFadeUp 0.5s ease both;
-}
-
-.account-profile-hero-left {
-  display: flex;
-  align-items: center;
-  gap: 1.15rem;
-  min-width: 0;
-}
-
-.account-profile-avatar {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  flex: 0 0 auto;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
-  animation: profilePulse 3s ease-in-out infinite;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 58%, #eef6ff 100%);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
 }
 
 .account-profile-kicker {
-  margin-bottom: 0.2rem;
-  color: #3b82f6;
-  font-size: 0.72rem;
+  margin-bottom: 0.45rem;
+  color: #c2410c;
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
-.account-profile-hero h1 {
+.account-profile-hero h1,
+.account-profile-card-header h2 {
   margin: 0;
   color: #111827;
-  font-size: clamp(1.35rem, 3vw, 1.75rem);
   font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  letter-spacing: 0;
 }
 
-.account-profile-email-display {
-  margin: 0.2rem 0 0;
-  color: #6b7280;
-  font-size: 0.88rem;
-  font-weight: 500;
+.account-profile-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
 }
 
-.account-profile-back {
+.account-profile-hero p {
+  max-width: 680px;
+  margin: 0.8rem 0 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.account-profile-back,
+.account-profile-primary-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  flex: 0 0 auto;
-  min-height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 0.55rem 1rem;
-  color: #374151;
-  background: #ffffff;
-  font-size: 0.88rem;
-  font-weight: 700;
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0.65rem 0.95rem;
+  font-weight: 800;
   text-decoration: none;
-  transition: all 0.2s ease;
+}
+
+.account-profile-back {
+  flex: 0 0 auto;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  background: #ffffff;
 }
 
 .account-profile-back:hover {
   color: #ffffff;
-  background: #3b82f6;
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-}
-
-.account-profile-back svg {
-  flex: 0 0 auto;
+  background: #f97316;
 }
 
 .account-profile-alert {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  padding: 0.85rem 1.1rem;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
   color: #166534;
   background: #f0fdf4;
-  font-weight: 600;
-  animation: profileFadeUp 0.4s ease both;
-}
-
-.account-profile-alert svg {
-  flex: 0 0 auto;
-  color: #22c55e;
 }
 
 .account-profile-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.15rem;
+  gap: 1rem;
 }
 
 .account-profile-card {
   display: grid;
   align-content: start;
-  gap: 1.15rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: clamp(1.15rem, 3vw, 1.6rem);
+  gap: 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: clamp(1.1rem, 3vw, 1.5rem);
   background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  animation: profileFadeUp 0.5s ease both;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
-}
-
-.account-profile-card:nth-child(2) {
-  animation-delay: 0.08s;
-}
-
-.account-profile-card:hover {
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.07);
 }
 
 .account-profile-card-header {
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.account-profile-card-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-  border-radius: 10px;
-  background: #eff6ff;
-  color: #3b82f6;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .account-profile-card-header h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-size: 1.25rem;
 }
 
 .account-profile-field {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .account-profile-field label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #4b5563;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.account-profile-field label svg {
-  color: #3b82f6;
-  flex: 0 0 auto;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .account-profile-field input {
   width: 100%;
   min-height: 46px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 0.7rem 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
   color: #111827;
-  background: #f9fafb;
-  font-family: inherit;
-  font-size: 0.95rem;
+  background: #ffffff;
   font-weight: 600;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.account-profile-field input::placeholder {
-  color: #9ca3af;
-  font-weight: 500;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .account-profile-field input:focus {
-  border-color: #3b82f6;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: #f97316;
+  box-shadow: 0 0 0 0.22rem rgba(249, 115, 22, 0.16);
 }
 
 .account-profile-readonly {
-  color: #6b7280 !important;
-  background: #f3f4f6 !important;
-  border-color: #e5e7eb !important;
+  color: #475569 !important;
+  background: #f8fafc !important;
   cursor: not-allowed;
 }
 
@@ -1503,264 +1414,38 @@ body.app-shell:has(.role-shell) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 0.35rem;
+  margin-top: 0.25rem;
 }
 
 .account-profile-primary-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 44px;
   border: 0;
-  border-radius: 10px;
-  padding: 0.65rem 1.2rem;
   color: #ffffff;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  font-family: inherit;
-  font-size: 0.92rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2);
-  transition: all 0.2s ease;
+  background: #ea580c;
 }
 
 .account-profile-primary-btn:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
-  transform: translateY(-1px);
-}
-
-.account-profile-primary-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-}
-
-.account-profile-primary-btn svg {
-  flex: 0 0 auto;
+  background: #c2410c;
 }
 
 .account-profile-validation {
-  color: #dc2626;
-  font-size: 0.82rem;
+  color: #b91c1c;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
 .account-profile-errors {
   display: none;
   border: 1px solid #fecaca;
-  border-radius: 10px;
-  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
   color: #991b1b;
   background: #fef2f2;
-  font-size: 0.9rem;
-}
-
-.account-profile-errors ul {
-  margin: 0;
-  padding-left: 1.1rem;
 }
 
 .account-profile-errors.validation-summary-errors {
   display: block;
-  animation: profileFadeUp 0.3s ease both;
 }
 
-/* ---- Dark override for Lecturer (inside .role-shell) ---- */
-.role-shell .account-profile-page { color: var(--edu-text); }
-.role-shell .account-profile-hero {
-  border-color: var(--edu-border);
-  background: var(--edu-surface);
-  backdrop-filter: blur(18px);
-  box-shadow: none;
-}
-.role-shell .account-profile-avatar {
-  background: linear-gradient(135deg, var(--edu-text), var(--edu-accent));
-  color: var(--edu-bg);
-  box-shadow: 0 4px 14px rgba(111, 168, 201, 0.2);
-}
-.role-shell .account-profile-kicker { color: var(--edu-accent); }
-.role-shell .account-profile-hero h1 { color: var(--edu-text); }
-.role-shell .account-profile-email-display { color: var(--edu-muted); }
-.role-shell .account-profile-back {
-  border-color: var(--edu-border-strong);
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.04);
-}
-.role-shell .account-profile-back:hover {
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.1);
-  border-color: var(--edu-accent);
-}
-.role-shell .account-profile-alert {
-  border-color: rgba(168, 230, 207, 0.22);
-  color: var(--edu-success);
-  background: rgba(168, 230, 207, 0.06);
-}
-.role-shell .account-profile-alert svg { color: var(--edu-success); }
-.role-shell .account-profile-card {
-  border-color: var(--edu-border);
-  background: var(--edu-surface);
-  backdrop-filter: blur(18px);
-  box-shadow: none;
-}
-.role-shell .account-profile-card:hover {
-  border-color: var(--edu-border-strong);
-  box-shadow: none;
-}
-.role-shell .account-profile-card-header { border-color: var(--edu-border); }
-.role-shell .account-profile-card-icon {
-  background: rgba(111, 168, 201, 0.11);
-  color: var(--edu-accent);
-}
-.role-shell .account-profile-card-header h2 { color: var(--edu-text); }
-.role-shell .account-profile-field label { color: var(--edu-soft); }
-.role-shell .account-profile-field label svg { color: var(--edu-accent); }
-.role-shell .account-profile-field input {
-  border-color: var(--edu-border);
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.04);
-}
-.role-shell .account-profile-field input::placeholder { color: var(--edu-soft); }
-.role-shell .account-profile-field input:focus {
-  border-color: var(--edu-accent);
-  background: rgba(228, 240, 246, 0.06);
-  box-shadow: 0 0 0 3px rgba(111, 168, 201, 0.12);
-}
-.role-shell .account-profile-readonly {
-  color: var(--edu-soft) !important;
-  background: rgba(228, 240, 246, 0.025) !important;
-  border-color: var(--edu-border) !important;
-}
-.role-shell .account-profile-primary-btn {
-  color: var(--edu-bg);
-  background: linear-gradient(135deg, var(--edu-text), var(--edu-accent));
-  box-shadow: 0 4px 14px rgba(111, 168, 201, 0.2);
-}
-.role-shell .account-profile-primary-btn:hover {
-  box-shadow: 0 6px 20px rgba(111, 168, 201, 0.3);
-}
-.role-shell .account-profile-primary-btn:active {
-  box-shadow: 0 2px 8px rgba(111, 168, 201, 0.15);
-}
-.role-shell .account-profile-validation { color: var(--edu-danger); }
-.role-shell .account-profile-errors {
-  border-color: rgba(255, 154, 162, 0.25);
-  color: var(--edu-danger);
-  background: rgba(255, 154, 162, 0.06);
-}
-
-/* ---- Dark override for Student (body.student-profile) ---- */
-body.student-profile {
-  background: var(--edu-bg);
-  color: var(--edu-text);
-}
-
-body.student-profile .navbar {
-  background: rgba(5, 8, 17, 0.72) !important;
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--edu-border) !important;
-}
-
-body.student-profile .navbar-brand {
-  color: var(--edu-text) !important;
-}
-
-body.student-profile .nav-link {
-  color: var(--edu-muted) !important;
-}
-
-body.student-profile .nav-link:hover {
-  color: var(--edu-text) !important;
-}
-
-body.student-profile .container {
-  color: var(--edu-text);
-}
-
-body.student-profile .account-profile-page { color: var(--edu-text); }
-body.student-profile .account-profile-hero {
-  border-color: var(--edu-border);
-  background: var(--edu-surface);
-  backdrop-filter: blur(18px);
-  box-shadow: none;
-}
-body.student-profile .account-profile-avatar {
-  background: linear-gradient(135deg, var(--edu-text), var(--edu-accent));
-  color: var(--edu-bg);
-  box-shadow: 0 4px 14px rgba(111, 168, 201, 0.2);
-}
-body.student-profile .account-profile-kicker { color: var(--edu-accent); }
-body.student-profile .account-profile-hero h1 { color: var(--edu-text); }
-body.student-profile .account-profile-email-display { color: var(--edu-muted); }
-body.student-profile .account-profile-back {
-  border-color: var(--edu-border-strong);
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.04);
-}
-body.student-profile .account-profile-back:hover {
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.1);
-  border-color: var(--edu-accent);
-}
-body.student-profile .account-profile-alert {
-  border-color: rgba(168, 230, 207, 0.22);
-  color: var(--edu-success);
-  background: rgba(168, 230, 207, 0.06);
-}
-body.student-profile .account-profile-alert svg { color: var(--edu-success); }
-body.student-profile .account-profile-card {
-  border-color: var(--edu-border);
-  background: var(--edu-surface);
-  backdrop-filter: blur(18px);
-  box-shadow: none;
-}
-body.student-profile .account-profile-card:hover {
-  border-color: var(--edu-border-strong);
-  box-shadow: none;
-}
-body.student-profile .account-profile-card-header { border-color: var(--edu-border); }
-body.student-profile .account-profile-card-icon {
-  background: rgba(111, 168, 201, 0.11);
-  color: var(--edu-accent);
-}
-body.student-profile .account-profile-card-header h2 { color: var(--edu-text); }
-body.student-profile .account-profile-field label { color: var(--edu-soft); }
-body.student-profile .account-profile-field label svg { color: var(--edu-accent); }
-body.student-profile .account-profile-field input {
-  border-color: var(--edu-border);
-  color: var(--edu-text);
-  background: rgba(228, 240, 246, 0.04);
-}
-body.student-profile .account-profile-field input::placeholder { color: var(--edu-soft); }
-body.student-profile .account-profile-field input:focus {
-  border-color: var(--edu-accent);
-  background: rgba(228, 240, 246, 0.06);
-  box-shadow: 0 0 0 3px rgba(111, 168, 201, 0.12);
-}
-body.student-profile .account-profile-readonly {
-  color: var(--edu-soft) !important;
-  background: rgba(228, 240, 246, 0.025) !important;
-  border-color: var(--edu-border) !important;
-}
-body.student-profile .account-profile-primary-btn {
-  color: var(--edu-bg);
-  background: linear-gradient(135deg, var(--edu-text), var(--edu-accent));
-  box-shadow: 0 4px 14px rgba(111, 168, 201, 0.2);
-}
-body.student-profile .account-profile-primary-btn:hover {
-  box-shadow: 0 6px 20px rgba(111, 168, 201, 0.3);
-}
-body.student-profile .account-profile-primary-btn:active {
-  box-shadow: 0 2px 8px rgba(111, 168, 201, 0.15);
-}
-body.student-profile .account-profile-validation { color: var(--edu-danger); }
-body.student-profile .account-profile-errors {
-  border-color: rgba(255, 154, 162, 0.25);
-  color: var(--edu-danger);
-  background: rgba(255, 154, 162, 0.06);
-}
 .role-form-errors {
   display: none;
   border: 1px solid rgba(255, 154, 162, 0.32);
@@ -1998,18 +1683,7 @@ body.student-profile .account-profile-errors {
   }
 
   .account-profile-hero {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .account-profile-hero-left {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .account-profile-back {
-    width: 100%;
+    display: grid;
   }
 
   .account-profile-grid {
@@ -2078,27 +1752,13 @@ body.student-profile .account-profile-errors {
   }
 
   .account-profile-page {
-    width: min(100% - 1.5rem, 1080px);
-    padding: 1rem 0;
+    width: min(100% - 1.5rem, 1120px);
+    padding: 1.25rem 0;
   }
 
   .account-profile-hero,
   .account-profile-card {
     padding: 1rem;
-    border-radius: 10px;
-  }
-
-  .account-profile-avatar {
-    width: 48px;
-    height: 48px;
-    font-size: 1.15rem;
-    border-radius: 10px;
-  }
-
-  .account-profile-card-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
   }
 
   .account-profile-back,
