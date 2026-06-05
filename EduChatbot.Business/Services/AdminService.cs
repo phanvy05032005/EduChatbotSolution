@@ -143,9 +143,20 @@ public class AdminService : IAdminService
             try
             {
                 var subject = "[EduChatbot] Thông tin tài khoản mới";
-                var body = BuildAccountEmailHtml(
-                    fullName.Trim(), email.Trim(), password, role,
-                    assignedCourseNames.Count > 0 ? assignedCourseNames : null);
+                var courseInfo = assignedCourseNames.Count > 0
+                    ? $"\n- Môn học phụ trách: {string.Join(", ", assignedCourseNames)}"
+                    : "";
+
+                var body = $@"Xin chào {fullName.Trim()},
+
+Tài khoản {role.ToLower()} của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+
+Thông tin đăng nhập của bạn:
+- Email đăng nhập: {email.Trim()}
+- Mật khẩu: {password}{courseInfo}
+
+Trân trọng,
+Hệ thống EduChatbot";
 
                 // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
                 await _emailQueueService.EnqueueAsync(email.Trim(), subject, body);
@@ -363,8 +374,20 @@ public class AdminService : IAdminService
                     try
                     {
                         var subject = "[EduChatbot] Thông tin tài khoản học tập mới";
-                        var body = BuildAccountEmailHtml(fullName, email, randomPassword, "Student", null);
+                        var body = $@"Xin chào {fullName},
 
+Tài khoản sinh viên của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+
+Thông tin đăng nhập của bạn:
+- Email đăng nhập: {email}
+- Mật khẩu: {randomPassword}
+
+Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên sử dụng.
+
+Trân trọng,
+Hệ thống EduChatbot";
+
+                        // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
                         await _emailQueueService.EnqueueAsync(email, subject, body);
                         emailQueuedCount++;
                     }
@@ -422,149 +445,6 @@ public class AdminService : IAdminService
         }
 
         return new string(pwd.OrderBy(_ => random.Next()).ToArray());
-    }
-
-    private static string BuildAccountEmailHtml(string fullName, string email, string password, string role, List<string>? courseNames)
-    {
-        var roleLabel = role switch
-        {
-            "Lecturer" => "Giảng viên",
-            "Student" => "Sinh viên",
-            _ => role
-        };
-
-        var courseSection = "";
-        if (courseNames != null && courseNames.Count > 0)
-        {
-            var courseItems = string.Join("", courseNames.Select(c =>
-            {
-                var parts = c.Split(new[] { " - " }, 2, StringSplitOptions.None);
-                var code = parts.Length > 0 ? parts[0] : "";
-                var name = parts.Length > 1 ? parts[1] : "";
-                return $@"
-                <div style=""padding:10px 12px;margin-bottom:8px;background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;"">
-                  <table cellpadding=""0"" cellspacing=""0"" width=""100%"">
-                    <tr>
-                      <td style=""width:85px;vertical-align:middle;"">
-                        <span style=""display:inline-block;padding:3px 8px;background:#0a0f1e;color:#6fa8c9;font-size:11px;font-weight:700;border-radius:6px;font-family:'Courier New',monospace;"">{code}</span>
-                      </td>
-                      <td style=""vertical-align:middle;padding-left:8px;"">
-                        <span style=""color:#1e293b;font-size:13px;font-weight:600;"">{name}</span>
-                      </td>
-                    </tr>
-                  </table>
-                </div>";
-            }));
-            courseSection = $@"
-            <tr>
-              <td style=""padding:0 32px 24px;"">
-                <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;padding:18px 20px;"">
-                  <tr>
-                    <td>
-                      <p style=""margin:0 0 12px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;"">📚 Môn học phụ trách</p>
-                      <div style=""margin:0;padding:0;"">{courseItems}</div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>";
-        }
-
-        return $@"<!DOCTYPE html>
-<html lang=""vi"">
-<head>
-  <meta charset=""utf-8"">
-  <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-  <title>EduChatbot - Thông tin tài khoản</title>
-</head>
-<body style=""margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;"">
-  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:#f1f5f9;padding:32px 16px;"">
-    <tr>
-      <td align=""center"">
-        <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);"">
-          <!-- Header -->
-          <tr>
-            <td style=""background:linear-gradient(135deg,#0a0f1e 0%,#1e3a5f 100%);padding:36px 32px;text-align:center;"">
-              <table cellpadding=""0"" cellspacing=""0"" style=""margin:0 auto;"">
-                <tr>
-                  <td style=""width:42px;height:42px;background:linear-gradient(135deg,#e4f0f6,#6fa8c9);border-radius:12px;text-align:center;vertical-align:middle;"">
-                    <span style=""font-size:20px;line-height:42px;"">🎓</span>
-                  </td>
-                  <td style=""padding-left:12px;"">
-                    <p style=""margin:0;color:#e4f0f6;font-size:20px;font-weight:700;letter-spacing:-0.01em;"">EduChatbot</p>
-                    <p style=""margin:2px 0 0;color:rgba(228,240,246,0.65);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;"">Academic Assistant</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Greeting -->
-          <tr>
-            <td style=""padding:32px 32px 8px;"">
-              <p style=""margin:0;color:#0f172a;font-size:22px;font-weight:600;"">Xin chào {fullName} 👋</p>
-            </td>
-          </tr>
-          <tr>
-            <td style=""padding:8px 32px 24px;"">
-              <p style=""margin:0;color:#475569;font-size:15px;line-height:1.6;"">
-                Tài khoản <strong>{roleLabel}</strong> của bạn đã được tạo thành công trên hệ thống EduChatbot bởi Quản trị viên.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Credentials Card -->
-          <tr>
-            <td style=""padding:0 32px 24px;"">
-              <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background:linear-gradient(135deg,#0a0f1e,#1e3a5f);border-radius:14px;overflow:hidden;"">
-                <tr>
-                  <td style=""padding:24px 24px 8px;"">
-                    <p style=""margin:0;font-size:11px;font-weight:700;color:rgba(228,240,246,0.55);text-transform:uppercase;letter-spacing:0.12em;"">Thông tin đăng nhập</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style=""padding:12px 24px;"">
-                    <table width=""100%"" cellpadding=""0"" cellspacing=""0"">
-                      <tr>
-                        <td style=""padding:8px 0;border-bottom:1px solid rgba(228,240,246,0.1);"">
-                          <p style=""margin:0;font-size:12px;color:rgba(228,240,246,0.5);"">Email</p>
-                          <p style=""margin:4px 0 0;font-size:15px;color:#e4f0f6;font-weight:500;"">{email}</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style=""padding:8px 0;"">
-                          <p style=""margin:0;font-size:12px;color:rgba(228,240,246,0.5);"">Mật khẩu</p>
-                          <p style=""margin:4px 0 0;font-size:15px;color:#6fa8c9;font-weight:600;font-family:'Courier New',monospace;letter-spacing:0.05em;"">{password}</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style=""padding:4px 24px 20px;"">
-                    <p style=""margin:0;font-size:12px;color:rgba(228,240,246,0.4);font-style:italic;"">⚠️ Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Course Section (if applicable) -->
-          {courseSection}
-
-          <!-- Footer -->
-          <tr>
-            <td style=""padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;"">
-              <p style=""margin:0;color:#94a3b8;font-size:12px;"">© {DateTime.UtcNow.Year} EduChatbot · Academic Platform</p>
-              <p style=""margin:6px 0 0;color:#cbd5e1;font-size:11px;"">Email này được gửi tự động, vui lòng không trả lời.</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>";
     }
 
     public async Task<List<Course>> GetCoursesAsync()
@@ -824,7 +704,20 @@ public class AdminService : IAdminService
                     {
                         var subject = "[EduChatbot] Thông tin tài khoản giảng viên mới";
                         var assignedCourseNames = courses.Select(c => $"{c.Code} - {c.Name}").ToList();
-                        var body = BuildAccountEmailHtml(fullName, email, randomPassword, "Lecturer", assignedCourseNames);
+
+                        var body = $@"Xin chào {fullName},
+
+Tài khoản giảng viên của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+
+Thông tin đăng nhập của bạn:
+- Email đăng nhập: {email}
+- Mật khẩu: {randomPassword}
+- Môn học phụ trách: {string.Join(", ", assignedCourseNames)}
+
+Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên sử dụng.
+
+Trân trọng,
+Hệ thống EduChatbot";
 
                         await _emailQueueService.EnqueueAsync(email, subject, body);
                         emailQueuedCount++;

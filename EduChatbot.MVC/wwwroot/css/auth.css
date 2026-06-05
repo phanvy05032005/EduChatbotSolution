@@ -405,29 +405,6 @@ body {
     color: rgba(228, 240, 246, 0.42);
 }
 
-.auth-password-toggle {
-    display: grid;
-    width: 48px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 0;
-    background: transparent;
-    color: rgba(228, 240, 246, 0.45);
-    cursor: pointer;
-    padding: 0;
-    outline: 0;
-    transition: color 0.18s ease;
-}
-
-.auth-password-toggle:hover {
-    color: rgba(228, 240, 246, 0.8);
-}
-
-.auth-password-toggle svg {
-    width: 18px;
-    height: 18px;
-}
-
 .auth-field-input-wrapper select option {
     background: var(--auth-bg);
     color: var(--auth-text);
