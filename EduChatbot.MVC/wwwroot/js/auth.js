@@ -23,4 +23,24 @@
             }, 190);
         });
     });
+
+    // Password visibility toggle
+    var toggleBtn = document.getElementById('passwordToggleBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+            var input = toggleBtn.closest('.auth-field-input-wrapper').querySelector('input');
+            var eyeOpen = toggleBtn.querySelector('.auth-eye-open');
+            var eyeClosed = toggleBtn.querySelector('.auth-eye-closed');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeOpen.style.display = 'none';
+                eyeClosed.style.display = '';
+            } else {
+                input.type = 'password';
+                eyeOpen.style.display = '';
+                eyeClosed.style.display = 'none';
+            }
+        });
+    }
 })();

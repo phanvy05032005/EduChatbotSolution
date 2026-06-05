@@ -55,7 +55,7 @@ public class EmailService : IEmailService
                             From = new MailAddress(senderEmail, senderName),
                             Subject = subject,
                             Body = body,
-                            IsBodyHtml = false
+                            IsBodyHtml = true
                         };
                         mailMessage.To.Add(toEmail);
 
