@@ -4,7 +4,9 @@ using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.IO;
 using System.Reflection;
+using MiniExcelLibs;
 
 namespace EduChatbot.MVC.Controllers;
 
@@ -468,7 +470,6 @@ public class AdminController : Controller
 
         await using var stream = excelFile.OpenReadStream();
         var result = await _adminService.ImportLecturersFromExcelAsync(stream, true);
-
         if (result.IsSuccess)
         {
             TempData["AdminMessage"] = result.Message;
@@ -479,5 +480,50 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Lecturers));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ImportCourses(IFormFile? excelFile)
+    {
+        if (excelFile == null || excelFile.Length == 0)
+        {
+            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            return RedirectToAction(nameof(Courses));
+        }
+
+        if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            return RedirectToAction(nameof(Courses));
+        }
+
+        await using var stream = excelFile.OpenReadStream();
+        var result = await _adminService.ImportCoursesFromExcelAsync(stream);
+
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Courses));
+    }
+
+    [HttpGet]
+    public IActionResult DownloadCourseTemplate()
+    {
+        var memoryStream = new MemoryStream();
+        var values = new[]
+        {
+            new { Code = "PRN222", Name = "C# & .NET Cloud", Description = "ASP.NET Core, MVC, Entity Framework Core" },
+            new { Code = "SWR302", Name = "Software Requirement", Description = "Software requirements elicitation, analysis, and validation" }
+        };
+        MiniExcel.SaveAs(memoryStream, values);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "CourseImportTemplate.xlsx");
     }
 }

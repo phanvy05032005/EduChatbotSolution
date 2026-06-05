@@ -42,4 +42,6 @@ public interface IAdminService
     Task<AdminOperationResult> AssignLecturerToCourseAsync(string lecturerId, int courseId);
 
     Task<AdminOperationResult> RemoveLecturerFromCourseAsync(string lecturerId, int courseId);
+
+    Task<AdminOperationResult> ImportCoursesFromExcelAsync(Stream fileStream);
 }
