@@ -754,4 +754,107 @@ Hệ thống EduChatbot";
             return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
         }
     }
+
+    public async Task<AdminOperationResult> ImportCoursesFromExcelAsync(Stream fileStream)
+    {
+        try
+        {
+            var rows = MiniExcel.Query(fileStream).ToList();
+            if (rows.Count <= 1)
+            {
+                return Failure("File Excel không có dữ liệu hoặc trống.");
+            }
+
+            var header = rows[0] as IDictionary<string, object>;
+            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+
+            string codeKey = "";
+            string nameKey = "";
+            string descKey = "";
+
+            foreach (var key in header.Keys)
+            {
+                var val = header[key]?.ToString()?.ToLowerInvariant() ?? "";
+                if (val.Contains("code") || val.Contains("mã") || val.Contains("mã môn")) codeKey = key;
+                else if (val.Contains("name") || val.Contains("tên") || val.Contains("tên môn")) nameKey = key;
+                else if (val.Contains("description") || val.Contains("mô tả")) descKey = key;
+            }
+
+            if (string.IsNullOrEmpty(codeKey) || string.IsNullOrEmpty(nameKey))
+            {
+                var keys = header.Keys.ToList();
+                if (keys.Count >= 2)
+                {
+                    codeKey = keys[0];
+                    nameKey = keys[1];
+                    if (keys.Count >= 3)
+                    {
+                        descKey = keys[2];
+                    }
+                }
+                else
+                {
+                    return Failure("File Excel cần ít nhất 2 cột: Code và Name.");
+                }
+            }
+
+            int successCount = 0;
+            int failedCount = 0;
+            var errorMessages = new List<string>();
+
+            for (int i = 1; i < rows.Count; i++)
+            {
+                var row = rows[i] as IDictionary<string, object>;
+                if (row == null) continue;
+
+                var code = row[codeKey]?.ToString()?.Trim();
+                var name = row[nameKey]?.ToString()?.Trim();
+                var description = !string.IsNullOrEmpty(descKey) ? row[descKey]?.ToString()?.Trim() : "";
+
+                if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1}: Thiếu Mã môn hoặc Tên môn.");
+                    continue;
+                }
+
+                var normalizedCode = code.ToUpperInvariant();
+                var existing = await _context.Courses.AnyAsync(c => c.Code == normalizedCode);
+                if (existing)
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({code}): Mã môn học đã tồn tại.");
+                    continue;
+                }
+
+                var course = new Course
+                {
+                    Code = normalizedCode,
+                    Name = name,
+                    Description = description ?? ""
+                };
+
+                _context.Courses.Add(course);
+                successCount++;
+            }
+
+            if (successCount > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            var msg = $"Nhập danh sách thành công {successCount} môn học.";
+            if (failedCount > 0)
+            {
+                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                if (errorMessages.Count > 5) msg += "...";
+            }
+
+            return new AdminOperationResult { IsSuccess = successCount > 0, Message = msg };
+        }
+        catch (Exception ex)
+        {
+            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+        }
+    }
 }
