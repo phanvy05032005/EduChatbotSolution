@@ -11,7 +11,7 @@ public interface IAdminService
 
     Task<AdminAccountEditInfo?> GetAccountForEditAsync(string id);
 
-    Task<AdminOperationResult> CreateAccountAsync(string fullName, string email, string password, string role, bool sendEmail = false, List<int>? courseIds = null);
+    Task<AdminOperationResult> CreateAccountAsync(string fullName, string email, string password, string role, bool sendEmail = true, List<int>? courseIds = null);
 
     Task<AdminOperationResult> UpdateAccountAsync(string id, string fullName, string email);
 
@@ -23,7 +23,9 @@ public interface IAdminService
 
     Task<bool> CanConnectToDatabaseAsync();
 
-    Task<AdminOperationResult> ImportStudentsFromExcelAsync(Stream fileStream, bool sendEmail = false);
+    Task<AdminOperationResult> ImportStudentsFromExcelAsync(Stream fileStream, bool sendEmail = true);
+
+    Task<AdminOperationResult> ImportLecturersFromExcelAsync(Stream fileStream, bool sendEmail = true);
 
     Task<List<Course>> GetCoursesAsync();
 

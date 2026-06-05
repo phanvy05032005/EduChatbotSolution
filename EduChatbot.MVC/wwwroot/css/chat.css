@@ -291,11 +291,13 @@ body.chat-layout.chat-sidebar-ready .chat-main {
     color: var(--chat-bg);
     font-size: 12px;
     font-weight: 700;
+    text-decoration: none;
 }
 
 .chat-user-copy {
     min-width: 0;
     flex: 1 1 auto;
+    text-decoration: none;
 }
 
 .chat-user-copy strong,

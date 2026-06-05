@@ -1,0 +1,92 @@
+@model EduChatbot.MVC.Models.AccountProfileViewModel
+
+@{
+    ViewData["Title"] = "Profile";
+    var isLecturer = User.IsInRole(EduChatbot.Models.Identity.ApplicationRoles.Lecturer);
+    var accountLabel = isLecturer ? "Lecturer account" : "Student account";
+    var backController = isLecturer ? "Documents" : "Chat";
+    var backAction = isLecturer ? "Dashboard" : "Index";
+    var backText = isLecturer ? "Back to dashboard" : "Back to chat";
+}
+
+<section class="account-profile-page">
+    <header class="account-profile-hero">
+        <div>
+            <div class="account-profile-kicker">@accountLabel</div>
+            <h1>Profile</h1>
+            <p>Update your display name and change the password received from the administrator.</p>
+        </div>
+        <a asp-controller="@backController" asp-action="@backAction" class="account-profile-back">@backText</a>
+    </header>
+
+    @if (TempData["ProfileMessage"] != null)
+    {
+        <div class="account-profile-alert">
+            <strong>@TempData["ProfileMessage"]</strong>
+        </div>
+    }
+
+    <div class="account-profile-grid">
+        <form asp-controller="Account" asp-action="Profile" method="post" class="account-profile-card">
+            @Html.AntiForgeryToken()
+            <div class="account-profile-card-header">
+                <div>
+                    <div class="account-profile-kicker">Personal information</div>
+                    <h2>Account details</h2>
+                </div>
+            </div>
+
+            <div asp-validation-summary="ModelOnly" class="account-profile-errors"></div>
+
+            <div class="account-profile-field">
+                <label asp-for="FullName">Full name</label>
+                <input asp-for="FullName" maxlength="100" autocomplete="name" />
+                <span asp-validation-for="FullName" class="account-profile-validation"></span>
+            </div>
+
+            <div class="account-profile-field">
+                <label asp-for="Email">Email login</label>
+                <input asp-for="Email" readonly class="account-profile-readonly" />
+            </div>
+
+            <div class="account-profile-actions">
+                <button type="submit" class="account-profile-primary-btn">Save profile</button>
+            </div>
+        </form>
+
+        <form asp-controller="Account" asp-action="ChangePassword" method="post" class="account-profile-card">
+            @Html.AntiForgeryToken()
+            <div class="account-profile-card-header">
+                <div>
+                    <div class="account-profile-kicker">Security</div>
+                    <h2>Change password</h2>
+                </div>
+            </div>
+
+            <div asp-validation-summary="All" class="account-profile-errors"></div>
+
+            <div class="account-profile-field">
+                <label for="CurrentPassword">Current password</label>
+                <input id="CurrentPassword" name="CurrentPassword" type="password" autocomplete="current-password" />
+            </div>
+
+            <div class="account-profile-field">
+                <label for="NewPassword">New password</label>
+                <input id="NewPassword" name="NewPassword" type="password" autocomplete="new-password" />
+            </div>
+
+            <div class="account-profile-field">
+                <label for="ConfirmPassword">Confirm new password</label>
+                <input id="ConfirmPassword" name="ConfirmPassword" type="password" autocomplete="new-password" />
+            </div>
+
+            <div class="account-profile-actions">
+                <button type="submit" class="account-profile-primary-btn">Change password</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

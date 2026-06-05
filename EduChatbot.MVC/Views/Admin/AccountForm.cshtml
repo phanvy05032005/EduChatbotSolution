@@ -48,31 +48,34 @@
             {
                 <div class="admin-field">
                     <label>Môn học phụ trách</label>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(228, 240, 246, 0.03); border: 1px solid var(--admin-border); padding: 0.8rem; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+
+                    <input id="courseSearch" type="search" placeholder="Tìm theo mã hoặc tên môn (ví dụ: PRN222, .NET...)"
+                           style="min-height: 44px; border: 1px solid rgba(228, 240, 246, 0.12); border-radius: 12px; outline: 0; background: rgba(228, 240, 246, 0.04); color: #e4f0f6; font: inherit; padding: 0.65rem 0.9rem;" />
+
+                    <select id="courseSelect" name="SelectedCourseIds" multiple size="8"
+                            style="width: 100%; border: 1px solid rgba(228, 240, 246, 0.12); border-radius: 12px; background: rgba(228, 240, 246, 0.04); color: #e4f0f6; font: inherit; padding: 0.6rem 0.75rem;">
                         @if (Model.AvailableCourses.Count == 0)
                         {
-                            <em style="color: rgba(228, 240, 246, 0.5);">Chưa có môn học nào được tạo. Hãy tạo môn học trước.</em>
+                            <option value="" disabled>Chưa có môn học nào được tạo. Hãy tạo môn học trước.</option>
                         }
                         else
                         {
                             @foreach (var course in Model.AvailableCourses)
                             {
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" name="SelectedCourseIds" value="@course.Id" id="course_@course.Id" style="width: auto; min-height: auto; cursor: pointer;" />
-                                    <label for="course_@course.Id" style="margin-bottom: 0; cursor: pointer; text-transform: none; letter-spacing: normal; font-weight: normal; color: var(--admin-text);">
-                                        <strong>@course.Code</strong> - @course.Name
-                                    </label>
-                                </div>
+                                <option value="@course.Id" data-search="@(course.Code + " " + course.Name)">[@course.Code] - @course.Name</option>
                             }
                         }
+                    </select>
+
+                    <div style="color: rgba(228, 240, 246, 0.65); font-size: 0.85rem;">
+                        Giữ phím <strong>Cmd</strong> (macOS) / <strong>Ctrl</strong> (Windows) để chọn nhiều môn.
                     </div>
                 </div>
             }
 
-            <div class="admin-field" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                <input asp-for="SendEmail" type="checkbox" id="SendEmail" style="width: auto; min-height: auto; cursor: pointer;" />
-                <label for="SendEmail" style="margin-bottom: 0; cursor: pointer; text-transform: none; letter-spacing: normal; font-weight: 500;">Gửi email thông báo tài khoản</label>
-            </div>
+            <p style="margin: 0.5rem 0 0; color: rgba(228, 240, 246, 0.68); font-size: 0.9rem;">
+                Hệ thống sẽ tự động gửi thông tin tài khoản đến email người dùng sau khi tạo thành công.
+            </p>
         }
 
         <div class="admin-form-actions">
@@ -86,4 +89,28 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const searchInput = document.getElementById('courseSearch');
+            const courseSelect = document.getElementById('courseSelect');
+            if (!searchInput || !courseSelect) return;
+
+            const normalize = (value) => (value || '').toString().toLowerCase().trim();
+
+            searchInput.addEventListener('input', function () {
+                const q = normalize(searchInput.value);
+                const options = Array.from(courseSelect.options);
+
+                options.forEach(opt => {
+                    const haystack = normalize(opt.getAttribute('data-search') || opt.text);
+                    // option disabled message: luôn hiển thị
+                    if (opt.disabled) {
+                        opt.hidden = false;
+                        return;
+                    }
+                    opt.hidden = q.length > 0 && !haystack.includes(q);
+                });
+            });
+        })();
+    </script>
 }

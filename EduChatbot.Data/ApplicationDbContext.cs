@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<LecturerCourse> LecturerCourses => Set<LecturerCourse>();
 
+    public DbSet<EmailQueue> EmailQueues => Set<EmailQueue>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -170,6 +172,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(c => c.LecturerCourses)
                 .HasForeignKey(lc => lc.CourseId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EmailQueue>(entity =>
+        {
+            entity.ToTable("email_queue");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ToEmail).HasColumnName("to_email").IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Subject).HasColumnName("subject").IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Body).HasColumnName("body").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").IsRequired().HasMaxLength(20);
+            entity.Property(e => e.RetryCount).HasColumnName("retry_count");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone");
+            entity.Property(e => e.SentAt)
+                .HasColumnName("sent_at")
+                .HasColumnType("timestamp with time zone");
+
+            entity.HasIndex(e => e.Status);
         });
     }
 }

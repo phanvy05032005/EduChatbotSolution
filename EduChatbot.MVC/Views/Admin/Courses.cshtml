@@ -37,18 +37,18 @@
                         <div style="margin-bottom: 1rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mã môn học (Code)</label>
                             <input type="text" name="code" placeholder="Ví dụ: PRN222" required 
-                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
                         </div>
                         <div style="margin-bottom: 1rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Tên môn học (Name)</label>
                             <input type="text" name="name" placeholder="Ví dụ: C# & .NET Cloud" required 
-                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
                         </div>
                         <div style="margin-bottom: 1rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mô tả môn học</label>
                             <textarea name="description" rows="6" required
                                       placeholder="Ví dụ: ASP.NET Core, MVC, Entity Framework Core, Repository Pattern, Dependency Injection, Authentication, Authorization"
-                                      style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);"></textarea>
+                                      style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);"></textarea>
                         </div>
                         <button type="submit" class="admin-primary-btn" style="width: 100%;">Tạo môn học</button>
                     </form>
@@ -113,7 +113,7 @@
                                         <form asp-controller="Admin" asp-action="AssignLecturer" method="post" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="courseId" value="@course.Id" />
-                                            <select name="lecturerId" required style="padding: 0.3rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); font-size: 0.85rem;">
+                                            <select name="lecturerId" required style="padding: 0.3rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text); font-size: 0.85rem;">
                                                 <option value="">-- Chọn giảng viên --</option>
                                                 @foreach (var lec in Model.Lecturers)
                                                 {

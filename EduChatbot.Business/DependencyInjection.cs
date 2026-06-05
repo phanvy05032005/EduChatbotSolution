@@ -5,6 +5,7 @@ using EduChatbot.Data.Repositories;
 using EduChatbot.Models.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pgvector.EntityFrameworkCore;
@@ -20,7 +21,9 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
-                npgsqlOptions => npgsqlOptions.UseVector()));
+                npgsqlOptions => npgsqlOptions.UseVector())
+            // NOTE: Dev/test: cho phép chạy migration update dù model snapshot còn lệch naming convention ở các bảng khác.
+            .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
@@ -52,6 +55,11 @@ public static class DependencyInjection
         services.AddHttpClient<IEmbeddingService, OpenRouterEmbeddingService>();
         services.AddHttpClient<IChatService, ChatService>();
         services.AddScoped<IEmailService, EmailService>();
+
+        // Email Queue (DB) + Worker
+        services.AddScoped<IEmailQueueRepository, EmailQueueRepository>();
+        services.AddScoped<IEmailQueueService, EmailQueueService>();
+        services.AddHostedService<EmailQueueWorker>();
 
         return services;
     }

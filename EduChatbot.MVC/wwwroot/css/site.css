@@ -864,7 +864,7 @@ body.app-shell:has(.role-shell) {
 .role-page {
   width: min(100% - 2rem, 1180px);
   margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 3rem) 0;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
 }
 
 .role-page.narrow {
@@ -1262,6 +1262,190 @@ body.app-shell:has(.role-shell) {
   padding: 1.25rem;
 }
 
+.account-profile-page {
+  width: min(100% - 2rem, 1120px);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4rem) 0;
+  color: #172033;
+}
+
+.account-profile-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 58%, #eef6ff 100%);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.account-profile-kicker {
+  margin-bottom: 0.45rem;
+  color: #c2410c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.account-profile-hero h1,
+.account-profile-card-header h2 {
+  margin: 0;
+  color: #111827;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.account-profile-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.account-profile-hero p {
+  max-width: 680px;
+  margin: 0.8rem 0 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.account-profile-back,
+.account-profile-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0.65rem 0.95rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.account-profile-back {
+  flex: 0 0 auto;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  background: #ffffff;
+}
+
+.account-profile-back:hover {
+  color: #ffffff;
+  background: #f97316;
+}
+
+.account-profile-alert {
+  margin-bottom: 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.account-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.account-profile-card {
+  display: grid;
+  align-content: start;
+  gap: 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: clamp(1.1rem, 3vw, 1.5rem);
+  background: #ffffff;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.07);
+}
+
+.account-profile-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.account-profile-card-header h2 {
+  font-size: 1.25rem;
+}
+
+.account-profile-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.account-profile-field label {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.account-profile-field input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  color: #111827;
+  background: #ffffff;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.account-profile-field input:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 0.22rem rgba(249, 115, 22, 0.16);
+}
+
+.account-profile-readonly {
+  color: #475569 !important;
+  background: #f8fafc !important;
+  cursor: not-allowed;
+}
+
+.account-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.account-profile-primary-btn {
+  border: 0;
+  color: #ffffff;
+  background: #ea580c;
+}
+
+.account-profile-primary-btn:hover {
+  background: #c2410c;
+}
+
+.account-profile-validation {
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.account-profile-errors {
+  display: none;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.account-profile-errors.validation-summary-errors {
+  display: block;
+}
+
 .role-form-errors {
   display: none;
   border: 1px solid rgba(255, 154, 162, 0.32);
@@ -1497,6 +1681,14 @@ body.app-shell:has(.role-shell) {
   .role-upload-callout {
     min-height: 180px;
   }
+
+  .account-profile-hero {
+    display: grid;
+  }
+
+  .account-profile-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1558,6 +1750,21 @@ body.app-shell:has(.role-shell) {
   .role-row-actions {
     flex-wrap: wrap;
   }
+
+  .account-profile-page {
+    width: min(100% - 1.5rem, 1120px);
+    padding: 1.25rem 0;
+  }
+
+  .account-profile-hero,
+  .account-profile-card {
+    padding: 1rem;
+  }
+
+  .account-profile-back,
+  .account-profile-primary-btn {
+    width: 100%;
+  }
 }
 
 /* ===== Figma Make (3) admin refresh ===== */
@@ -1583,6 +1790,13 @@ body.admin-layout select {
 body.admin-layout select option {
   background: #0f172a !important;
   color: #e4f0f6 !important;
+}
+
+body.admin-layout input,
+body.admin-layout textarea {
+  color: #e4f0f6 !important;
+  background: var(--admin-bg) !important;
+  border: 1px solid var(--admin-border) !important;
 }
 
 body.admin-layout input::placeholder,
@@ -2643,7 +2857,7 @@ body.admin-layout textarea::placeholder {
   }
 
   .admin-topbar,
-  .admin-page-header {
+  .admin-page_header {
     align-items: stretch;
     flex-direction: column;
   }

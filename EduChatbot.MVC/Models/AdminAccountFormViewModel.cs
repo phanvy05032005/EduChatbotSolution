@@ -21,14 +21,9 @@ public class AdminAccountFormViewModel
     [DataType(DataType.Password)]
     public string? Password { get; set; }
 
-    public bool SendEmail { get; set; } = false;
-
-
-
     public List<int> SelectedCourseIds { get; set; } = [];
 
     public List<Course> AvailableCourses { get; set; } = [];
 
     public bool IsEdit => !string.IsNullOrWhiteSpace(Id);
 }
-

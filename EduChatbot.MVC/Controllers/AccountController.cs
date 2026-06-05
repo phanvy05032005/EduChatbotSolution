@@ -66,6 +66,104 @@ public class AccountController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    [Authorize(Roles = ApplicationRoles.Student + "," + ApplicationRoles.Lecturer)]
+    [HttpGet]
+    public async Task<IActionResult> Profile()
+    {
+        // Profile dùng chung cho Student và Lecturer, dữ liệu vẫn lấy từ ASP.NET Identity.
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        return View(new AccountProfileViewModel
+        {
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty
+        });
+    }
+
+    [Authorize(Roles = ApplicationRoles.Student + "," + ApplicationRoles.Lecturer)]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(AccountProfileViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        model.Email = user.Email ?? string.Empty;
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        // Chỉ cho phép người dùng tự cập nhật tên hiển thị, không cho sửa email đăng nhập.
+        user.FullName = model.FullName.Trim();
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        await _signInManager.RefreshSignInAsync(user);
+        TempData["ProfileMessage"] = "Cập nhật hồ sơ thành công.";
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [Authorize(Roles = ApplicationRoles.Student + "," + ApplicationRoles.Lecturer)]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(AccountChangePasswordViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(nameof(Profile), new AccountProfileViewModel
+            {
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty
+            });
+        }
+
+        // Identity tự kiểm tra mật khẩu cũ, hash mật khẩu mới và lưu vào AspNetUsers.PasswordHash.
+        var result = await _userManager.ChangePasswordAsync(
+            user,
+            model.CurrentPassword,
+            model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(nameof(Profile), new AccountProfileViewModel
+            {
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty
+            });
+        }
+
+        await _signInManager.RefreshSignInAsync(user);
+        TempData["ProfileMessage"] = "Đổi mật khẩu thành công.";
+        return RedirectToAction(nameof(Profile));
+    }
+
     public IActionResult AccessDenied()
     {
         return View();

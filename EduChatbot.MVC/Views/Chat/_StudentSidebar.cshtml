@@ -58,14 +58,12 @@
             </svg>
             <span>Search chats</span>
         </a>
-        <a asp-controller="Chat" asp-action="Index" class="chat-nav-action">
+        <a asp-controller="Account" asp-action="Profile" class="chat-nav-action">
             <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                <path d="M5 5v14" />
-                <path d="M9 5v14" />
-                <path d="M13 7v12" />
-                <path d="m17 7 2 12" />
+                <circle cx="12" cy="8" r="4" />
+                <path d="M5 20a7 7 0 0 1 14 0" />
             </svg>
-            <span>Library</span>
+            <span>Profile</span>
         </a>
     </nav>
 
@@ -100,11 +98,11 @@
     </div>
 
     <footer class="chat-sidebar-user">
-        <div class="chat-user-avatar">@initial</div>
-        <div class="chat-user-copy">
+        <a asp-controller="Account" asp-action="Profile" class="chat-user-avatar" title="Profile">@initial</a>
+        <a asp-controller="Account" asp-action="Profile" class="chat-user-copy">
             <strong>@userName</strong>
             <span>Student</span>
-        </div>
+        </a>
         <form asp-controller="Account" asp-action="Logout" method="post" class="chat-user-logout">
             @Html.AntiForgeryToken()
             <button type="submit" title="Logout" aria-label="Logout">

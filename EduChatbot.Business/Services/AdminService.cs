@@ -13,15 +13,18 @@ public class AdminService : IAdminService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
     private readonly IEmailService _emailService;
+    private readonly IEmailQueueService _emailQueueService;
 
     public AdminService(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
-        IEmailService emailService)
+        IEmailService emailService,
+        IEmailQueueService emailQueueService)
     {
         _userManager = userManager;
         _context = context;
         _emailService = emailService;
+        _emailQueueService = emailQueueService;
     }
 
     public async Task<AdminStatisticsInfo> GetStatisticsAsync()
@@ -81,7 +84,7 @@ public class AdminService : IAdminService
         };
     }
 
-    public async Task<AdminOperationResult> CreateAccountAsync(string fullName, string email, string password, string role, bool sendEmail = false, List<int>? courseIds = null)
+    public async Task<AdminOperationResult> CreateAccountAsync(string fullName, string email, string password, string role, bool sendEmail = true, List<int>? courseIds = null)
     {
         if (!IsManageableRole(role))
         {
@@ -134,6 +137,7 @@ public class AdminService : IAdminService
             await _context.SaveChangesAsync();
         }
 
+        var emailQueued = false;
         if (sendEmail)
         {
             try
@@ -154,15 +158,24 @@ Thông tin đăng nhập của bạn:
 Trân trọng,
 Hệ thống EduChatbot";
 
-                await _emailService.SendEmailAsync(email.Trim(), subject, body);
+                // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
+                await _emailQueueService.EnqueueAsync(email.Trim(), subject, body);
+                emailQueued = true;
             }
             catch
             {
-                // Không chặn quá trình tạo tài khoản nếu email lỗi
+                // Không chặn quá trình tạo tài khoản nếu enqueue email lỗi
+                emailQueued = false;
             }
         }
 
-        return Success($"{role} account created successfully.");
+        var successMessage = sendEmail
+            ? (emailQueued
+                ? $"{role} account created successfully and email notification was queued."
+                : $"{role} account created successfully, but email notification could not be queued.")
+            : $"{role} account created successfully.";
+
+        return Success(successMessage);
     }
 
     public async Task<AdminOperationResult> UpdateAccountAsync(string id, string fullName, string email)
@@ -263,7 +276,7 @@ Hệ thống EduChatbot";
         return new AdminOperationResult { IsSuccess = false, Message = message };
     }
 
-    public async Task<AdminOperationResult> ImportStudentsFromExcelAsync(Stream fileStream, bool sendEmail = false)
+    public async Task<AdminOperationResult> ImportStudentsFromExcelAsync(Stream fileStream, bool sendEmail = true)
     {
         try
         {
@@ -302,6 +315,8 @@ Hệ thống EduChatbot";
 
             int successCount = 0;
             int failedCount = 0;
+            int emailQueuedCount = 0;
+            int emailQueueFailedCount = 0;
             var errorMessages = new List<string>();
 
             for (int i = 1; i < rows.Count; i++)
@@ -328,7 +343,7 @@ Hệ thống EduChatbot";
                 }
 
                 var randomPassword = GenerateRandomPassword();
-                
+
                 var user = new ApplicationUser
                 {
                     UserName = email,
@@ -372,11 +387,14 @@ Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên s�
 Trân trọng,
 Hệ thống EduChatbot";
 
-                        await _emailService.SendEmailAsync(email, subject, body);
+                        // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
+                        await _emailQueueService.EnqueueAsync(email, subject, body);
+                        emailQueuedCount++;
                     }
                     catch
                     {
-                        // Không chặn import nếu email lỗi
+                        // Không chặn import nếu enqueue email lỗi
+                        emailQueueFailedCount++;
                     }
                 }
                 successCount++;
@@ -387,6 +405,15 @@ Hệ thống EduChatbot";
             {
                 msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
+            }
+
+            if (sendEmail)
+            {
+                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                if (emailQueueFailedCount > 0)
+                {
+                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                }
             }
 
             return new AdminOperationResult { IsSuccess = successCount > 0, Message = msg };
@@ -535,5 +562,196 @@ Hệ thống EduChatbot";
         await _context.SaveChangesAsync();
 
         return Success("Hủy phân công dạy môn học thành công.");
+    }
+
+    public async Task<AdminOperationResult> ImportLecturersFromExcelAsync(Stream fileStream, bool sendEmail = true)
+    {
+        try
+        {
+            var rows = MiniExcel.Query(fileStream).ToList();
+            if (rows.Count <= 1)
+            {
+                return Failure("File Excel không có dữ liệu hoặc trống.");
+            }
+
+            var header = rows[0] as IDictionary<string, object>;
+            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+
+            string emailKey = "";
+            string nameKey = "";
+            string courseCodesKey = "";
+
+            foreach (var key in header.Keys)
+            {
+                var val = header[key]?.ToString()?.ToLowerInvariant() ?? "";
+                if (val.Contains("email") || val.Contains("thư điện tử")) emailKey = key;
+                else if (val.Contains("name") || val.Contains("tên") || val.Contains("họ tên")) nameKey = key;
+                else if (val.Contains("course") || val.Contains("môn") || val.Contains("code")) courseCodesKey = key;
+            }
+
+            if (string.IsNullOrEmpty(emailKey) || string.IsNullOrEmpty(nameKey) || string.IsNullOrEmpty(courseCodesKey))
+            {
+                return Failure("File Excel Lecturer cần 3 cột: FullName, Email, CourseCodes.");
+            }
+
+            int successCount = 0;
+            int failedCount = 0;
+            int emailQueuedCount = 0;
+            int emailQueueFailedCount = 0;
+            var errorMessages = new List<string>();
+
+            for (int i = 1; i < rows.Count; i++)
+            {
+                var row = rows[i] as IDictionary<string, object>;
+                if (row == null) continue;
+
+                var email = row[emailKey]?.ToString()?.Trim();
+                var fullName = row[nameKey]?.ToString()?.Trim();
+                var rawCourseCodes = row[courseCodesKey]?.ToString()?.Trim();
+
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1}: Thiếu Email hoặc Họ tên.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(rawCourseCodes))
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes rỗng.");
+                    continue;
+                }
+
+                var existingUser = await _userManager.FindByEmailAsync(email);
+                if (existingUser != null)
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): Email đã tồn tại.");
+                    continue;
+                }
+
+                // Parse danh sách mã môn: tách theo dấu phẩy, trim, uppercase.
+                var courseCodes = rawCourseCodes
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(x => x.Trim().ToUpperInvariant())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .ToList();
+
+                if (courseCodes.Count == 0)
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes không hợp lệ.");
+                    continue;
+                }
+
+                // Validate tất cả course code phải tồn tại.
+                var courses = await _context.Courses
+                    .Where(c => courseCodes.Contains(c.Code))
+                    .ToListAsync();
+
+                if (courses.Count != courseCodes.Count)
+                {
+                    var existingCodes = courses.Select(c => c.Code).ToHashSet();
+                    var missing = courseCodes.Where(code => !existingCodes.Contains(code)).ToList();
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCode không tồn tại: {string.Join(", ", missing)}");
+                    continue;
+                }
+
+                var randomPassword = GenerateRandomPassword();
+
+                var user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FullName = fullName,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(user, randomPassword);
+                if (!createResult.Succeeded)
+                {
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+                    continue;
+                }
+
+                var roleResult = await _userManager.AddToRoleAsync(user, ApplicationRoles.Lecturer);
+                if (!roleResult.Succeeded)
+                {
+                    await _userManager.DeleteAsync(user);
+                    failedCount++;
+                    errorMessages.Add($"Dòng {i + 1} ({email}): Không thể gán vai trò Lecturer.");
+                    continue;
+                }
+
+                // Tạo LecturerCourse
+                foreach (var course in courses)
+                {
+                    _context.LecturerCourses.Add(new LecturerCourse
+                    {
+                        LecturerId = user.Id,
+                        CourseId = course.Id
+                    });
+                }
+                await _context.SaveChangesAsync();
+
+                if (sendEmail)
+                {
+                    try
+                    {
+                        var subject = "[EduChatbot] Thông tin tài khoản giảng viên mới";
+                        var assignedCourseNames = courses.Select(c => $"{c.Code} - {c.Name}").ToList();
+
+                        var body = $@"Xin chào {fullName},
+
+Tài khoản giảng viên của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+
+Thông tin đăng nhập của bạn:
+- Email đăng nhập: {email}
+- Mật khẩu: {randomPassword}
+- Môn học phụ trách: {string.Join(", ", assignedCourseNames)}
+
+Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên sử dụng.
+
+Trân trọng,
+Hệ thống EduChatbot";
+
+                        await _emailQueueService.EnqueueAsync(email, subject, body);
+                        emailQueuedCount++;
+                    }
+                    catch
+                    {
+                        emailQueueFailedCount++;
+                    }
+                }
+
+                successCount++;
+            }
+
+            var msg = $"Nhập danh sách thành công {successCount} giảng viên.";
+            if (failedCount > 0)
+            {
+                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                if (errorMessages.Count > 5) msg += "...";
+            }
+
+            if (sendEmail)
+            {
+                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                if (emailQueueFailedCount > 0)
+                {
+                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                }
+            }
+
+            return new AdminOperationResult { IsSuccess = successCount > 0, Message = msg };
+        }
+        catch (Exception ex)
+        {
+            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+        }
     }
 }

@@ -113,7 +113,8 @@ public class AdminController : Controller
             model.Email,
             model.Password!,
             model.AccountType,
-            model.SendEmail,
+            // Tài khoản do Admin tạo phải tự động gửi thông tin đăng nhập cho người dùng.
+            true,
             model.SelectedCourseIds);
 
         if (!result.IsSuccess)
@@ -305,7 +306,7 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ImportStudents(IFormFile? excelFile, bool sendEmail = false)
+    public async Task<IActionResult> ImportStudents(IFormFile? excelFile)
     {
         if (excelFile == null || excelFile.Length == 0)
         {
@@ -320,7 +321,8 @@ public class AdminController : Controller
         }
 
         await using var stream = excelFile.OpenReadStream();
-        var result = await _adminService.ImportStudentsFromExcelAsync(stream, sendEmail);
+        // Import sinh viên cũng tự động gửi email để sinh viên nhận thông tin đăng nhập ngay.
+        var result = await _adminService.ImportStudentsFromExcelAsync(stream, true);
 
         if (result.IsSuccess)
         {
@@ -446,5 +448,36 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Courses));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ImportLecturers(IFormFile? excelFile)
+    {
+        if (excelFile == null || excelFile.Length == 0)
+        {
+            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            return RedirectToAction(nameof(Lecturers));
+        }
+
+        if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            return RedirectToAction(nameof(Lecturers));
+        }
+
+        await using var stream = excelFile.OpenReadStream();
+        var result = await _adminService.ImportLecturersFromExcelAsync(stream, true);
+
+        if (result.IsSuccess)
+        {
+            TempData["AdminMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["AdminError"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Lecturers));
     }
 }
