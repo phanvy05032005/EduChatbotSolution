@@ -35,7 +35,7 @@
 
     document.querySelectorAll('.suggestion-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            chatInput.value = this.dataset.question || '';
+            chatInput.value = this.textContent.trim();
             chatInput.dispatchEvent(new Event('input'));
             submitMessage();
         });
@@ -83,7 +83,7 @@
             })
             .catch(function () {
                 removeLoading(loadingId);
-                appendMessage('ai', 'Xin lỗi, đã xảy ra lỗi khi gửi tin nhắn. Vui lòng thử lại.');
+                appendMessage('ai', window.EduI18n ? EduI18n.t('chat.errorSending') : 'Sorry, an error occurred while sending the message. Please try again.');
                 scrollToBottom();
             })
             .finally(function () {
@@ -168,7 +168,7 @@
         bubble.className = 'msg-bubble ai';
         bubble.innerHTML = '<div class="loading-dots">' +
             '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>' +
-            '<span class="loading-text">Đang tìm kiếm tài liệu...</span>' +
+            '<span class="loading-text">' + (window.EduI18n ? EduI18n.t('chat.searchingDocs') : 'Searching documents...') + '</span>' +
             '</div>';
 
         contentDiv.appendChild(bubble);

@@ -41,13 +41,13 @@ public class ChatController : Controller
     {
         if (string.IsNullOrWhiteSpace(message))
         {
-            return BadRequest(new { error = "Vui lòng nhập câu hỏi." });
+            return BadRequest(new { error = "Please enter a question." });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var aiMessage = await _chatService.SendMessageAsync(conversationId, userId, message.Trim());
 
-        // Parse source chunks từ JSON string.
+        // Parse source chunks from JSON string.
         var sources = new List<ChatSourceViewModel>();
         if (!string.IsNullOrWhiteSpace(aiMessage.SourceChunks))
         {
@@ -65,7 +65,7 @@ public class ChatController : Controller
             }
             catch
             {
-                // Nếu parse lỗi thì bỏ qua sources.
+                // If parsing fails, ignore sources.
             }
         }
 

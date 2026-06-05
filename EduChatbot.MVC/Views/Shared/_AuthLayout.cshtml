@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
 </head>
 <body class="auth-body">
+    <div class="auth-lang-toggle" style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10;">
+        <button type="button" class="lang-toggle-btn" onclick="EduI18n.toggle()" title="Switch language" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;">VI</button>
+    </div>
+
     <div class="auth-bg" aria-hidden="true">
         <div class="auth-bg-base"></div>
         <div class="auth-bg-grid"></div>
@@ -19,6 +23,7 @@
     @RenderBody()
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/auth.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

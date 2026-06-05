@@ -112,7 +112,7 @@ public class AdminService : IAdminService
             return Failure(string.Join(" ", roleResult.Errors.Select(error => error.Description)));
         }
 
-        // Phân công giảng viên dạy danh sách môn học đã chọn
+        // Assign lecturer to teach selected courses
         var assignedCourseNames = new List<string>();
         if (role == ApplicationRoles.Lecturer && courseIds != null && courseIds.Count > 0)
         {
@@ -142,29 +142,29 @@ public class AdminService : IAdminService
         {
             try
             {
-                var subject = "[EduChatbot] Thông tin tài khoản mới";
+                var subject = "[EduChatbot] New Account Credentials";
                 var courseInfo = assignedCourseNames.Count > 0
-                    ? $"\n- Môn học phụ trách: {string.Join(", ", assignedCourseNames)}"
+                    ? $"\n- Assigned Courses: {string.Join(", ", assignedCourseNames)}"
                     : "";
 
-                var body = $@"Xin chào {fullName.Trim()},
+                var body = $@"Hello {fullName.Trim()},
 
-Tài khoản {role.ToLower()} của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+Your {role.ToLower()} account has been created on the EduChatbot system by the Administrator.
 
-Thông tin đăng nhập của bạn:
-- Email đăng nhập: {email.Trim()}
-- Mật khẩu: {password}{courseInfo}
+Your login credentials:
+- Login Email: {email.Trim()}
+- Password: {password}{courseInfo}
 
-Trân trọng,
-Hệ thống EduChatbot";
+Best regards,
+EduChatbot System";
 
-                // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
+                // IMPORTANT: Do not send email directly -> push to queue for background worker sending.
                 await _emailQueueService.EnqueueAsync(email.Trim(), subject, body);
                 emailQueued = true;
             }
             catch
             {
-                // Không chặn quá trình tạo tài khoản nếu enqueue email lỗi
+                // Do not block account creation if email enqueue fails
                 emailQueued = false;
             }
         }
@@ -283,11 +283,11 @@ Hệ thống EduChatbot";
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string emailKey = "";
             string nameKey = "";
@@ -309,7 +309,7 @@ Hệ thống EduChatbot";
                 }
                 else
                 {
-                    return Failure("File Excel cần ít nhất 2 cột: Email và Họ tên.");
+                    return Failure("Excel file requires at least 2 columns: Email and FullName.");
                 }
             }
 
@@ -330,7 +330,7 @@ Hệ thống EduChatbot";
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(fullName))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Email hoặc Họ tên.");
+                    errorMessages.Add($"Row {i + 1}: Missing Email or FullName.");
                     continue;
                 }
 
@@ -338,7 +338,7 @@ Hệ thống EduChatbot";
                 if (existingUser != null)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Email đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Email already exists.");
                     continue;
                 }
 
@@ -365,7 +365,7 @@ Hệ thống EduChatbot";
                 {
                     await _userManager.DeleteAsync(user);
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Không thể gán vai trò.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Cannot assign role.");
                     continue;
                 }
 
@@ -373,46 +373,46 @@ Hệ thống EduChatbot";
                 {
                     try
                     {
-                        var subject = "[EduChatbot] Thông tin tài khoản học tập mới";
-                        var body = $@"Xin chào {fullName},
+                        var subject = "[EduChatbot] New Student Account Credentials";
+                        var body = $@"Hello {fullName},
 
-Tài khoản sinh viên của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+Your student account has been created on the EduChatbot system by the Administrator.
 
-Thông tin đăng nhập của bạn:
-- Email đăng nhập: {email}
-- Mật khẩu: {randomPassword}
+Your login credentials:
+- Login Email: {email}
+- Password: {randomPassword}
 
-Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên sử dụng.
+Please log in and change your password upon your first use.
 
-Trân trọng,
-Hệ thống EduChatbot";
+Best regards,
+EduChatbot System";
 
-                        // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
+                        // IMPORTANT: Do not send email directly -> push to queue for background worker sending.
                         await _emailQueueService.EnqueueAsync(email, subject, body);
                         emailQueuedCount++;
                     }
                     catch
                     {
-                        // Không chặn import nếu enqueue email lỗi
+                        // Do not block import if email enqueue fails
                         emailQueueFailedCount++;
                     }
                 }
                 successCount++;
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} sinh viên.";
+            var msg = $"Successfully imported {successCount} student(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
             if (sendEmail)
             {
-                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                msg += $" Queued {emailQueuedCount} email(s).";
                 if (emailQueueFailedCount > 0)
                 {
-                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                    msg += $" Failed to queue {emailQueueFailedCount} email(s).";
                 }
             }
 
@@ -420,7 +420,7 @@ Hệ thống EduChatbot";
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 
@@ -468,14 +468,14 @@ Hệ thống EduChatbot";
     {
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(description))
         {
-            return Failure("Mã môn học, tên môn học và mô tả môn học không được để trống.");
+            return Failure("Course code, course name, and course description cannot be empty.");
         }
 
         var normalizedCode = code.Trim().ToUpperInvariant();
         var existing = await _context.Courses.AnyAsync(c => c.Code == normalizedCode);
         if (existing)
         {
-            return Failure($"Môn học có mã '{normalizedCode}' đã tồn tại.");
+            return Failure($"Course with code '{normalizedCode}' already exists.");
         }
 
         var course = new Course
@@ -488,7 +488,7 @@ Hệ thống EduChatbot";
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
 
-        return Success("Tạo môn học thành công.");
+        return Success("Course created successfully.");
     }
 
     public async Task<AdminOperationResult> DeleteCourseAsync(int id)
@@ -496,13 +496,13 @@ Hệ thống EduChatbot";
         var course = await _context.Courses.FindAsync(id);
         if (course == null)
         {
-            return Failure("Không tìm thấy môn học.");
+            return Failure("Course not found.");
         }
 
         _context.Courses.Remove(course);
         await _context.SaveChangesAsync();
 
-        return Success("Xóa môn học thành công.");
+        return Success("Course deleted successfully.");
     }
 
     public async Task<List<ApplicationUser>> GetLecturersAsync()
@@ -522,19 +522,19 @@ Hệ thống EduChatbot";
     public async Task<AdminOperationResult> AssignLecturerToCourseAsync(string lecturerId, int courseId)
     {
         var lecturer = await _userManager.FindByIdAsync(lecturerId);
-        if (lecturer == null) return Failure("Không tìm thấy giảng viên.");
+        if (lecturer == null) return Failure("Lecturer not found.");
 
         var course = await _context.Courses.FindAsync(courseId);
-        if (course == null) return Failure("Không tìm thấy môn học.");
+        if (course == null) return Failure("Course not found.");
 
         var isLecturer = await _userManager.IsInRoleAsync(lecturer, ApplicationRoles.Lecturer);
-        if (!isLecturer) return Failure("Người dùng không phải giảng viên.");
+        if (!isLecturer) return Failure("User is not a lecturer.");
 
         var existing = await _context.LecturerCourses
             .AnyAsync(lc => lc.LecturerId == lecturerId && lc.CourseId == courseId);
         if (existing)
         {
-            return Success("Giảng viên đã được phân công dạy môn này.");
+            return Success("Lecturer is already assigned to this course.");
         }
 
         var assignment = new LecturerCourse
@@ -546,7 +546,7 @@ Hệ thống EduChatbot";
         _context.LecturerCourses.Add(assignment);
         await _context.SaveChangesAsync();
 
-        return Success("Phân công giảng viên cho môn học thành công.");
+        return Success("Lecturer assigned to course successfully.");
     }
 
     public async Task<AdminOperationResult> RemoveLecturerFromCourseAsync(string lecturerId, int courseId)
@@ -555,13 +555,13 @@ Hệ thống EduChatbot";
             .FirstOrDefaultAsync(lc => lc.LecturerId == lecturerId && lc.CourseId == courseId);
         if (assignment == null)
         {
-            return Failure("Không tìm thấy phân công dạy môn này.");
+            return Failure("Course assignment not found.");
         }
 
         _context.LecturerCourses.Remove(assignment);
         await _context.SaveChangesAsync();
 
-        return Success("Hủy phân công dạy môn học thành công.");
+        return Success("Lecturer course assignment removed successfully.");
     }
 
     public async Task<AdminOperationResult> ImportLecturersFromExcelAsync(Stream fileStream, bool sendEmail = true)
@@ -571,11 +571,11 @@ Hệ thống EduChatbot";
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string emailKey = "";
             string nameKey = "";
@@ -591,7 +591,7 @@ Hệ thống EduChatbot";
 
             if (string.IsNullOrEmpty(emailKey) || string.IsNullOrEmpty(nameKey) || string.IsNullOrEmpty(courseCodesKey))
             {
-                return Failure("File Excel Lecturer cần 3 cột: FullName, Email, CourseCodes.");
+                return Failure("Excel file requires 3 columns: FullName, Email, CourseCodes.");
             }
 
             int successCount = 0;
@@ -612,14 +612,14 @@ Hệ thống EduChatbot";
                 if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Email hoặc Họ tên.");
+                    errorMessages.Add($"Row {i + 1}: Missing Email or FullName.");
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(rawCourseCodes))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes rỗng.");
+                    errorMessages.Add($"Row {i + 1} ({email}): CourseCodes is empty.");
                     continue;
                 }
 
@@ -627,11 +627,11 @@ Hệ thống EduChatbot";
                 if (existingUser != null)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Email đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Email already exists.");
                     continue;
                 }
 
-                // Parse danh sách mã môn: tách theo dấu phẩy, trim, uppercase.
+                // Parse course codes list: split by comma, trim, uppercase.
                 var courseCodes = rawCourseCodes
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(x => x.Trim().ToUpperInvariant())
@@ -642,11 +642,11 @@ Hệ thống EduChatbot";
                 if (courseCodes.Count == 0)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes không hợp lệ.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Invalid CourseCodes.");
                     continue;
                 }
 
-                // Validate tất cả course code phải tồn tại.
+                // Validate all course codes must exist.
                 var courses = await _context.Courses
                     .Where(c => courseCodes.Contains(c.Code))
                     .ToListAsync();
@@ -656,7 +656,7 @@ Hệ thống EduChatbot";
                     var existingCodes = courses.Select(c => c.Code).ToHashSet();
                     var missing = courseCodes.Where(code => !existingCodes.Contains(code)).ToList();
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCode không tồn tại: {string.Join(", ", missing)}");
+                    errorMessages.Add($"Row {i + 1} ({email}): CourseCode does not exist: {string.Join(", ", missing)}");
                     continue;
                 }
 
@@ -683,11 +683,11 @@ Hệ thống EduChatbot";
                 {
                     await _userManager.DeleteAsync(user);
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Không thể gán vai trò Lecturer.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Cannot assign Lecturer role.");
                     continue;
                 }
 
-                // Tạo LecturerCourse
+                // Create LecturerCourse
                 foreach (var course in courses)
                 {
                     _context.LecturerCourses.Add(new LecturerCourse
@@ -702,22 +702,22 @@ Hệ thống EduChatbot";
                 {
                     try
                     {
-                        var subject = "[EduChatbot] Thông tin tài khoản giảng viên mới";
+                        var subject = "[EduChatbot] New Lecturer Account Credentials";
                         var assignedCourseNames = courses.Select(c => $"{c.Code} - {c.Name}").ToList();
 
-                        var body = $@"Xin chào {fullName},
+                        var body = $@"Hello {fullName},
 
-Tài khoản giảng viên của bạn đã được tạo trên hệ thống EduChatbot bởi Quản trị viên.
+Your lecturer account has been created on the EduChatbot system by the Administrator.
 
-Thông tin đăng nhập của bạn:
-- Email đăng nhập: {email}
-- Mật khẩu: {randomPassword}
-- Môn học phụ trách: {string.Join(", ", assignedCourseNames)}
+Your login credentials:
+- Login Email: {email}
+- Password: {randomPassword}
+- Assigned Courses: {string.Join(", ", assignedCourseNames)}
 
-Vui lòng đăng nhập và thay đổi mật khẩu trong lần đầu tiên sử dụng.
+Please log in and change your password upon your first use.
 
-Trân trọng,
-Hệ thống EduChatbot";
+Best regards,
+EduChatbot System";
 
                         await _emailQueueService.EnqueueAsync(email, subject, body);
                         emailQueuedCount++;
@@ -731,19 +731,19 @@ Hệ thống EduChatbot";
                 successCount++;
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} giảng viên.";
+            var msg = $"Successfully imported {successCount} lecturer(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
             if (sendEmail)
             {
-                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                msg += $" Queued {emailQueuedCount} email(s).";
                 if (emailQueueFailedCount > 0)
                 {
-                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                    msg += $" Failed to queue {emailQueueFailedCount} email(s).";
                 }
             }
 
@@ -751,7 +751,7 @@ Hệ thống EduChatbot";
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 
@@ -762,11 +762,11 @@ Hệ thống EduChatbot";
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string codeKey = "";
             string nameKey = "";
@@ -794,7 +794,7 @@ Hệ thống EduChatbot";
                 }
                 else
                 {
-                    return Failure("File Excel cần ít nhất 2 cột: Code và Name.");
+                    return Failure("Excel file requires at least 2 columns: Code and Name.");
                 }
             }
 
@@ -814,7 +814,7 @@ Hệ thống EduChatbot";
                 if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Mã môn hoặc Tên môn.");
+                    errorMessages.Add($"Row {i + 1}: Missing Course Code or Name.");
                     continue;
                 }
 
@@ -823,7 +823,7 @@ Hệ thống EduChatbot";
                 if (existing)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({code}): Mã môn học đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({code}): Course code already exists.");
                     continue;
                 }
 
@@ -843,10 +843,10 @@ Hệ thống EduChatbot";
                 await _context.SaveChangesAsync();
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} môn học.";
+            var msg = $"Successfully imported {successCount} course(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
@@ -854,7 +854,7 @@ Hệ thống EduChatbot";
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 }

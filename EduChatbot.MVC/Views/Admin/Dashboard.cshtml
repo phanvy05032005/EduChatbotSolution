@@ -15,16 +15,24 @@
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">System overview</div>
-            <h1>Tổng quan <span class="admin-serif">hệ thống</span></h1>
-            <p>Theo dõi số liệu và hoạt động trên toàn hệ thống EduChatbot.</p>
+            <div class="admin-kicker" data-i18n="admin.dashboard.kicker">System overview</div>
+            <h1><span data-i18n="admin.dashboard.title">System</span> <span class="admin-serif" data-i18n="admin.dashboard.titleSerif">Overview</span></h1>
+            <p data-i18n="admin.dashboard.subtitle">Monitor metrics and activity across the EduChatbot system.</p>
         </div>
-        <a asp-controller="Admin" asp-action="Dashboard" class="admin-secondary-btn">Refresh</a>
+        <a asp-controller="Admin" asp-action="Dashboard" class="admin-secondary-btn" data-i18n="admin.dashboard.refresh">Refresh</a>
     </div>
 
     <div class="admin-metric-grid">
         @foreach (var metric in metrics)
         {
+            var metricKey = metric.Label switch
+            {
+                "Total Students" => "admin.dashboard.totalStudents",
+                "Total Lecturers" => "admin.dashboard.totalLecturers",
+                "Documents in System" => "admin.dashboard.documentsInSystem",
+                "Total Chat Questions" => "admin.dashboard.totalChatQuestions",
+                _ => ""
+            };
             <article class="admin-card admin-metric-card @metric.Tone">
                 <div class="admin-card-glow"></div>
                 <div class="admin-metric-top">
@@ -32,7 +40,7 @@
                     <span class="admin-delta">@metric.Delta</span>
                 </div>
                 <strong>@metric.Value.ToString("N0")</strong>
-                <span>@metric.Label</span>
+                <span data-i18n="@metricKey">@metric.Label</span>
             </article>
         }
     </div>
@@ -40,8 +48,8 @@
     <div class="admin-dashboard-grid">
         <section class="admin-card admin-activity-card">
             <div class="admin-card-header">
-                <h2><span aria-hidden="true">⌁</span> Recent activities</h2>
-                <span class="admin-live-pill">Live</span>
+                <h2><span aria-hidden="true">⌁</span> <span data-i18n="admin.dashboard.recentActivities">Recent activities</span></h2>
+                <span class="admin-live-pill" data-i18n="admin.dashboard.live">Live</span>
             </div>
             <ul class="activity-list">
                 @foreach (var activity in Model.RecentActivities)
@@ -50,15 +58,15 @@
                         <span class="activity-icon" aria-hidden="true">✦</span>
                         <div>
                             <strong>@activity</strong>
-                            <small>Updated just now · Admin</small>
+                            <small data-i18n="admin.dashboard.updatedJustNow">Updated just now · Admin</small>
                         </div>
                     </li>
                 }
             </ul>
         </section>
 
-        <aside class="admin-card admin-mini-chart">
-            <div class="admin-chart-title">Questions · last 7 days</div>
+        <aside class="admin-card admin-sparkline-card">
+            <div class="admin-chart-title" data-i18n="admin.dashboard.questionsLast7">Questions · last 7 days</div>
             <div class="admin-sparkline" aria-hidden="true">
                 @foreach (var point in chartPoints)
                 {
@@ -68,7 +76,7 @@
             <div class="admin-chart-total">
                 <div>
                     <strong>@Math.Max(Model.TotalChatQuestions, 0).ToString("N0")</strong>
-                    <span>Total questions</span>
+                    <span data-i18n="admin.dashboard.totalQuestions">Total questions</span>
                 </div>
                 <em>+18.2%</em>
             </div>

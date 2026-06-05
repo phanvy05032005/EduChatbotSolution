@@ -9,13 +9,13 @@
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Accounts · @Model.AccountType</div>
-            <h1>Quản lý <span class="admin-serif">@Model.AccountType</span></h1>
-            <p>View, search, lock, unlock, and manage @Model.AccountType.ToLowerInvariant() accounts.</p>
+            <div class="admin-kicker"><span data-i18n="admin.accounts.manage">Manage</span> · @Model.AccountType</div>
+            <h1><span data-i18n="admin.accounts.manage">Manage</span> <span class="admin-serif">@Model.AccountType</span></h1>
+            <p data-i18n="admin.accounts.viewSearchDesc">View, search, lock, unlock, and manage accounts.</p>
         </div>
         <a asp-controller="Admin"
            asp-action="@createAction"
-           class="admin-primary-btn">Create account</a>
+           class="admin-primary-btn" data-i18n="admin.accounts.createAccount">Create account</a>
     </div>
 
     @if (TempData["AdminMessage"] != null)
@@ -32,15 +32,15 @@
     {
         <section class="admin-card mb-4" style="margin-bottom: 2rem;">
             <div class="admin-card-header">
-                <h2>Nhập tài khoản sinh viên bằng Excel</h2>
+                <h2 data-i18n="admin.accounts.importStudentExcel">Import student accounts via Excel</h2>
             </div>
             <div style="padding: 1.5rem;">
                 <form asp-controller="Admin" asp-action="ImportStudents" method="post" enctype="multipart/form-data" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     @Html.AntiForgeryToken()
                     <input type="file" name="excelFile" accept=".xlsx" required style="padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
-                    <button type="submit" class="admin-primary-btn" style="height: auto;">Tải lên & Nhập danh sách</button>
+                    <button type="submit" class="admin-primary-btn" style="height: auto;" data-i18n="admin.accounts.uploadImport">Upload & Import</button>
                 </form>
-                <small style="display: block; margin-top: 0.5rem; color: rgba(228, 240, 246, 0.65);">Yêu cầu file Excel (.xlsx) có chứa các cột: <strong>Email</strong> và <strong>FullName</strong> (hoặc Họ tên). Hệ thống sẽ tự động gửi thông tin tài khoản đến email sinh viên được import.</small>
+                <small style="display: block; margin-top: 0.5rem; color: rgba(228, 240, 246, 0.65);" data-i18n="admin.accounts.requireStudentExcel">Requires an Excel file (.xlsx) with columns: Email and FullName. The system will automatically send account credentials to each imported student's email.</small>
             </div>
         </section>
     }
@@ -49,17 +49,17 @@
     {
         <section class="admin-card mb-4" style="margin-bottom: 2rem;">
             <div class="admin-card-header">
-                <h2>Nhập tài khoản giảng viên bằng Excel</h2>
+                <h2 data-i18n="admin.accounts.importLecturerExcel">Import lecturer accounts via Excel</h2>
             </div>
             <div style="padding: 1.5rem;">
                 <form asp-controller="Admin" asp-action="ImportLecturers" method="post" enctype="multipart/form-data" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     @Html.AntiForgeryToken()
                     <input type="file" name="excelFile" accept=".xlsx" required style="padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg);" />
-                    <button type="submit" class="admin-primary-btn" style="height: auto;">Tải lên & Nhập danh sách</button>
+                    <button type="submit" class="admin-primary-btn" style="height: auto;" data-i18n="admin.accounts.uploadImport">Upload & Import</button>
                 </form>
                 <small style="display: block; margin-top: 0.5rem; color: rgba(228, 240, 246, 0.65);">
-                    Yêu cầu file Excel (.xlsx) có chứa các cột: <strong>FullName</strong>, <strong>Email</strong>, <strong>CourseCodes</strong>.
-                    Ví dụ CourseCodes: <strong>PRN222</strong> hoặc <strong>PRN222,PRM392</strong>. Email sẽ được đưa vào hàng đợi gửi nền.
+                    <span data-i18n="admin.accounts.requireLecturerExcel">Requires an Excel file (.xlsx) with columns: FullName, Email, CourseCodes.</span>
+                    <span data-i18n="admin.accounts.exampleCodes">Example CourseCodes: PRN222 or PRN222,PRM392. Emails will be queued for background delivery.</span>
                 </small>
             </div>
         </section>
@@ -68,29 +68,29 @@
     <form method="get" class="admin-search">
         <div class="admin-search-input">
             <span aria-hidden="true">⌕</span>
-            <input type="search" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by ID, full name, or email" />
+            <input type="search" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by ID, full name, or email" data-i18n-placeholder="admin.accounts.searchPlaceholder" />
         </div>
-        <button type="submit">Search</button>
+        <button type="submit" data-i18n="admin.accounts.search">Search</button>
     </form>
 
     <section class="admin-card admin-table-card">
         <div class="admin-card-header">
-            <h2>@Model.AccountType List</h2>
-            <span>@Model.Accounts.Count account(s)</span>
+            <h2><span data-i18n="admin.accounts.list">List</span> @Model.AccountType</h2>
+            <span>@Model.Accounts.Count <span data-i18n="admin.accounts.accounts">account(s)</span></span>
         </div>
         <div class="table-responsive">
             <table class="table admin-table mb-0">
                 <thead>
                     <tr>
-                        <th>@Model.AccountType ID</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
+                        <th data-i18n="@(isLecturer ? "admin.accounts.lecturerId" : "admin.accounts.studentId")">@Model.AccountType ID</th>
+                        <th data-i18n="admin.accounts.fullName">Full Name</th>
+                        <th data-i18n="admin.accounts.email">Email</th>
                         @if (isLecturer)
                         {
-                            <th>Department</th>
+                            <th data-i18n="admin.accounts.department">Department</th>
                         }
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th data-i18n="admin.accounts.status">Status</th>
+                        <th data-i18n="admin.accounts.actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -108,14 +108,14 @@
                                 <span class="admin-status @(account.Status == "Active" ? "is-active" : "is-locked")">@account.Status</span>
                             </td>
                             <td class="admin-actions">
-                                <a asp-controller="Admin" asp-action="EditAccount" asp-route-id="@account.Id" title="Edit">Edit</a>
+                                <a asp-controller="Admin" asp-action="EditAccount" asp-route-id="@account.Id" title="Edit" data-i18n="admin.accounts.edit">Edit</a>
                                 @if (account.Status == "Active")
                                 {
                                     <form asp-controller="Admin" asp-action="LockAccount" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@account.Id" />
                                         <input type="hidden" name="accountType" value="@Model.AccountType" />
-                                        <button type="submit">Lock</button>
+                                        <button type="submit" data-i18n="admin.accounts.lock">Lock</button>
                                     </form>
                                 }
                                 else
@@ -124,14 +124,14 @@
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@account.Id" />
                                         <input type="hidden" name="accountType" value="@Model.AccountType" />
-                                        <button type="submit">Unlock</button>
+                                        <button type="submit" data-i18n="admin.accounts.unlock">Unlock</button>
                                     </form>
                                 }
                                 <form asp-controller="Admin" asp-action="DeleteAccount" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@account.Id" />
                                     <input type="hidden" name="accountType" value="@Model.AccountType" />
-                                    <button type="submit" class="danger" onclick="return confirm('Delete this account?');">Delete</button>
+                                    <button type="submit" class="danger" onclick="return confirm('Delete this account?');" data-i18n="admin.accounts.delete" data-i18n-confirm="admin.accounts.confirmDelete" data-i18n-confirm-en="Delete this account?">Delete</button>
                                 </form>
                             </td>
                         </tr>
@@ -141,7 +141,7 @@
         </div>
         @if (Model.Accounts.Count == 0)
         {
-            <div class="admin-empty-state">No matching accounts found.</div>
-        }
+            <div class="admin-empty-state" data-i18n="admin.accounts.noMatching">No matching accounts found.</div>
+        }  }
     </section>
 </div>

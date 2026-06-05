@@ -45,12 +45,12 @@ public class DocumentsController : Controller
     {
         if (courseId <= 0)
         {
-            ModelState.AddModelError("courseId", "Vui lòng chọn môn học.");
+            ModelState.AddModelError("courseId", "Please select a course.");
         }
 
         if (documentFile == null)
         {
-            ModelState.AddModelError("documentFile", "Vui lòng chọn file PDF hoặc DOCX.");
+            ModelState.AddModelError("documentFile", "Please select a PDF or DOCX file.");
         }
 
         if (!ModelState.IsValid)

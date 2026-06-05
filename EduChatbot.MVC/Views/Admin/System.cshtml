@@ -14,27 +14,58 @@
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">System · Health</div>
-            <h1>Quản lý <span class="admin-serif">hệ thống</span></h1>
-            <p>Trạng thái các dịch vụ và cấu hình hệ thống.</p>
+            <div class="admin-kicker"><span data-i18n="admin.sidebar.systemManagement">System</span> · <span data-i18n="admin.dashboard.live">Health</span></div>
+            <h1><span data-i18n="admin.system.title">System</span> <span class="admin-serif" data-i18n="admin.system.titleSerif">Management</span></h1>
+            <p data-i18n="admin.system.subtitle">Service status and system configuration overview.</p>
         </div>
         <div class="admin-header-actions">
-            <a asp-controller="Admin" asp-action="System" class="admin-secondary-btn">Refresh Status</a>
-            <button type="button" class="admin-primary-btn">Backup System</button>
+            <a asp-controller="Admin" asp-action="System" class="admin-secondary-btn" data-i18n="admin.system.refreshStatus">Refresh Status</a>
+            <button type="button" class="admin-primary-btn" data-i18n="admin.system.backupSystem">Backup System</button>
         </div>
     </div>
 
     <div class="system-grid">
         @foreach (var item in items)
         {
+            var labelKey = item.Label switch
+            {
+                "Database Status" => "admin.system.dbStatus",
+                "Application Status" => "admin.system.appStatus",
+                "Storage Usage" => "admin.system.storageUsage",
+                "System Version" => "admin.system.sysVersion",
+                _ => ""
+            };
+            var detailKey = item.Detail switch
+            {
+                "PostgreSQL connection" => "admin.system.dbDetail",
+                "ASP.NET Core MVC" => "admin.system.appDetail",
+                "Uploaded documents" => "admin.system.storageDetail",
+                "Current assembly" => "admin.system.versionDetail",
+                _ => ""
+            };
+            var valKey = item.Value switch
+            {
+                "Connected" => "admin.system.connected",
+                "Disconnected" => "admin.system.disconnected",
+                "Running" => "admin.system.active",
+                _ => ""
+            };
+
             <article class="admin-card system-card @item.Tone">
                 <div class="system-card-top">
                     <span class="system-icon" aria-hidden="true">@item.Icon</span>
                     <i aria-hidden="true"></i>
                 </div>
-                <span>@item.Label</span>
-                <strong>@item.Value</strong>
-                <small>@item.Detail</small>
+                <span data-i18n="@labelKey">@item.Label</span>
+                @if (!string.IsNullOrEmpty(valKey))
+                {
+                    <strong data-i18n="@valKey">@item.Value</strong>
+                }
+                else
+                {
+                    <strong>@item.Value</strong>
+                }
+                <small data-i18n="@detailKey">@item.Detail</small>
             </article>
         }
     </div>
@@ -42,27 +73,27 @@
     <div class="admin-config-grid">
         <section class="admin-card admin-config-card">
             <div class="admin-card-header">
-                <h2>AI Configuration</h2>
-                <span>Runtime</span>
+                <h2 data-i18n="admin.system.aiConfig">AI Configuration</h2>
+                <span data-i18n="admin.system.runtime">Runtime</span>
             </div>
             <dl>
-                <div><dt>Model</dt><dd>OpenRouter configured</dd></div>
-                <div><dt>Temperature</dt><dd>0.3</dd></div>
-                <div><dt>Max tokens</dt><dd>2048</dd></div>
-                <div><dt>Embedding</dt><dd>Vector search enabled</dd></div>
+                <div><dt data-i18n="admin.system.model">Model</dt><dd data-i18n="admin.system.openrouterConfig">OpenRouter configured</dd></div>
+                <div><dt data-i18n="admin.system.temp">Temperature</dt><dd>0.3</dd></div>
+                <div><dt data-i18n="admin.system.maxTokens">Max tokens</dt><dd>2048</dd></div>
+                <div><dt data-i18n="admin.system.embedding">Embedding</dt><dd data-i18n="admin.system.vectorEnabled">Vector search enabled</dd></div>
             </dl>
         </section>
 
         <section class="admin-card admin-config-card">
             <div class="admin-card-header">
-                <h2>Document Pipeline</h2>
-                <span>Storage</span>
+                <h2 data-i18n="admin.system.docPipeline">Document Pipeline</h2>
+                <span data-i18n="admin.system.storage">Storage</span>
             </div>
             <dl>
-                <div><dt>Chunk size</dt><dd>512 tokens</dd></div>
-                <div><dt>Overlap</dt><dd>64 tokens</dd></div>
-                <div><dt>Formats</dt><dd>PDF, DOCX</dd></div>
-                <div><dt>Database</dt><dd>@Model.DatabaseStatus</dd></div>
+                <div><dt data-i18n="admin.system.chunkSize">Chunk size</dt><dd data-i18n="admin.system.chunkSizeDetail">512 tokens</dd></div>
+                <div><dt data-i18n="admin.system.overlap">Overlap</dt><dd data-i18n="admin.system.overlapDetail">64 tokens</dd></div>
+                <div><dt data-i18n="admin.system.formats">Formats</dt><dd data-i18n="admin.system.formatsDetail">PDF, DOCX</dd></div>
+                <div><dt data-i18n="admin.system.database">Database</dt><dd><span data-i18n="@(Model.DatabaseStatus == "Connected" ? "admin.system.connected" : "admin.system.disconnected")">@Model.DatabaseStatus</span></dd></div>
             </dl>
         </section>
     </div>

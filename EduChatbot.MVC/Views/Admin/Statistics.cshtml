@@ -21,23 +21,31 @@
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Analytics</div>
-            <h1>Thống kê <span class="admin-serif">hệ thống</span></h1>
-            <p>Hoạt động sử dụng và xu hướng dữ liệu tổng quan.</p>
+            <div class="admin-kicker" data-i18n="admin.sidebar.statistics">Analytics</div>
+            <h1><span data-i18n="admin.stats.title">System</span> <span class="admin-serif" data-i18n="admin.stats.titleSerif">Statistics</span></h1>
+            <p data-i18n="admin.stats.subtitle">Usage activity and overall data trends.</p>
         </div>
     </div>
 
     <section class="admin-card admin-stat-chart">
         <div class="admin-card-header">
-            <h2>System Totals</h2>
-            <span>Current snapshot</span>
+            <h2 data-i18n="admin.stats.totals">System Totals</h2>
+            <span data-i18n="admin.stats.snapshot">Current snapshot</span>
         </div>
         <div class="simple-chart">
             @foreach (var item in items)
             {
                 var width = Math.Max(8, item.Value * 100 / Model.MaxValue);
+                var labelKey = item.Label switch
+                {
+                    "Total Students" => "admin.dashboard.totalStudents",
+                    "Total Lecturers" => "admin.dashboard.totalLecturers",
+                    "Total Documents" => "admin.stats.totalDocuments",
+                    "Total Questions Asked" => "admin.stats.totalQuestionsAsked",
+                    _ => ""
+                };
                 <div class="chart-row @item.Tone">
-                    <label>@item.Label</label>
+                    <label data-i18n="@labelKey">@item.Label</label>
                     <div class="chart-track">
                         <div class="chart-bar" style="width: @(width)%"></div>
                     </div>
@@ -49,8 +57,8 @@
 
     <section class="admin-card admin-stat-chart mt-3">
         <div class="admin-card-header">
-            <h2>Top topics</h2>
-            <span>Relative activity</span>
+            <h2 data-i18n="admin.stats.topTopics">Top topics</h2>
+            <span data-i18n="admin.stats.relativeActivity">Relative activity</span>
         </div>
         <div class="topic-bars">
             @foreach (var topic in topics)

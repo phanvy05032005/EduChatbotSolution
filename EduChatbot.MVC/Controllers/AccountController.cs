@@ -34,7 +34,7 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Dùng Identity service, Controller không thao tác DbContext trực tiếp.
+        // Use Identity service, Controller does not touch DbContext directly.
         var result = await _signInManager.PasswordSignInAsync(
             model.Email,
             model.Password,
@@ -52,7 +52,7 @@ public class AccountController : Controller
             return await RedirectByRoleAsync(user);
         }
 
-        ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
+        ModelState.AddModelError(string.Empty, "Incorrect email or password.");
         return View(model);
     }
 
@@ -70,7 +70,7 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> Profile()
     {
-        // Profile dùng chung cho Student và Lecturer, dữ liệu vẫn lấy từ ASP.NET Identity.
+        // Profile shared for Student and Lecturer, data is still retrieved from ASP.NET Identity.
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {
@@ -101,7 +101,7 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Chỉ cho phép người dùng tự cập nhật tên hiển thị, không cho sửa email đăng nhập.
+        // Only allow users to update display name, not login email.
         user.FullName = model.FullName.Trim();
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
@@ -115,7 +115,7 @@ public class AccountController : Controller
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        TempData["ProfileMessage"] = "Cập nhật hồ sơ thành công.";
+        TempData["ProfileMessage"] = "Profile updated successfully.";
         return RedirectToAction(nameof(Profile));
     }
 
@@ -139,7 +139,7 @@ public class AccountController : Controller
             });
         }
 
-        // Identity tự kiểm tra mật khẩu cũ, hash mật khẩu mới và lưu vào AspNetUsers.PasswordHash.
+        // Identity checks old password, hashes new password and saves to AspNetUsers.PasswordHash.
         var result = await _userManager.ChangePasswordAsync(
             user,
             model.CurrentPassword,
@@ -160,7 +160,7 @@ public class AccountController : Controller
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        TempData["ProfileMessage"] = "Đổi mật khẩu thành công.";
+        TempData["ProfileMessage"] = "Password changed successfully.";
         return RedirectToAction(nameof(Profile));
     }
 
