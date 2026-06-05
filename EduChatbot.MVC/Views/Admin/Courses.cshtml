@@ -54,25 +54,6 @@
                     </form>
                 </div>
             </section>
-
-            <section class="admin-card" style="margin-top: 2rem;">
-                <div class="admin-card-header">
-                    <h2>Nhập Môn học bằng Excel</h2>
-                </div>
-                <div style="padding: 1.5rem;">
-                    <form asp-controller="Admin" asp-action="ImportCourses" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
-                        @Html.AntiForgeryToken()
-                        <input type="file" name="excelFile" accept=".xlsx" required style="padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
-                        <div style="display: flex; gap: 0.5rem; width: 100%;">
-                            <button type="submit" class="admin-primary-btn" style="flex: 1; height: auto;">Nhập môn học</button>
-                            <a asp-controller="Admin" asp-action="DownloadCourseTemplate" class="admin-primary-btn" style="background: rgba(228, 240, 246, 0.1); color: var(--admin-text); border: 1px solid var(--admin-border); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.9rem; height: auto; text-align: center;">Tải mẫu Excel</a>
-                        </div>
-                    </form>
-                    <small style="display: block; margin-top: 0.75rem; color: rgba(228, 240, 246, 0.65); line-height: 1.4;">
-                        Yêu cầu file Excel (.xlsx) chứa các cột: <strong>Code</strong> (Mã môn học), <strong>Name</strong> (Tên môn học), và <strong>Description</strong> (Mô tả).
-                    </small>
-                </div>
-            </section>
         </div>
 
         <!-- Cột phải: Danh sách môn học và phân công giảng viên -->
