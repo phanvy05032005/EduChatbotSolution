@@ -7,21 +7,35 @@
     var backController = isLecturer ? "Documents" : "Chat";
     var backAction = isLecturer ? "Dashboard" : "Index";
     var backText = isLecturer ? "Back to dashboard" : "Back to chat";
+    var userName = Model.FullName;
+    var initial = string.IsNullOrWhiteSpace(userName) ? "U" : userName.Trim()[0].ToString().ToUpperInvariant();
+
+    if (!isLecturer)
+    {
+        ViewData["BodyClass"] = "student-profile";
+    }
 }
 
 <section class="account-profile-page">
     <header class="account-profile-hero">
-        <div>
-            <div class="account-profile-kicker">@accountLabel</div>
-            <h1>Profile</h1>
-            <p>Update your display name and change the password received from the administrator.</p>
+        <div class="account-profile-hero-left">
+            <div class="account-profile-avatar" aria-hidden="true">@initial</div>
+            <div>
+                <div class="account-profile-kicker">@accountLabel</div>
+                <h1>@userName</h1>
+                <p class="account-profile-email-display">@Model.Email</p>
+            </div>
         </div>
-        <a asp-controller="@backController" asp-action="@backAction" class="account-profile-back">@backText</a>
+        <a asp-controller="@backController" asp-action="@backAction" class="account-profile-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            @backText
+        </a>
     </header>
 
     @if (TempData["ProfileMessage"] != null)
     {
         <div class="account-profile-alert">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <strong>@TempData["ProfileMessage"]</strong>
         </div>
     }
@@ -30,6 +44,9 @@
         <form asp-controller="Account" asp-action="Profile" method="post" class="account-profile-card">
             @Html.AntiForgeryToken()
             <div class="account-profile-card-header">
+                <div class="account-profile-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                </div>
                 <div>
                     <div class="account-profile-kicker">Personal information</div>
                     <h2>Account details</h2>
@@ -39,24 +56,36 @@
             <div asp-validation-summary="ModelOnly" class="account-profile-errors"></div>
 
             <div class="account-profile-field">
-                <label asp-for="FullName">Full name</label>
-                <input asp-for="FullName" maxlength="100" autocomplete="name" />
+                <label asp-for="FullName">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    Full name
+                </label>
+                <input asp-for="FullName" maxlength="100" autocomplete="name" placeholder="Enter your full name" />
                 <span asp-validation-for="FullName" class="account-profile-validation"></span>
             </div>
 
             <div class="account-profile-field">
-                <label asp-for="Email">Email login</label>
+                <label asp-for="Email">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    Email login
+                </label>
                 <input asp-for="Email" readonly class="account-profile-readonly" />
             </div>
 
             <div class="account-profile-actions">
-                <button type="submit" class="account-profile-primary-btn">Save profile</button>
+                <button type="submit" class="account-profile-primary-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save profile
+                </button>
             </div>
         </form>
 
         <form asp-controller="Account" asp-action="ChangePassword" method="post" class="account-profile-card">
             @Html.AntiForgeryToken()
             <div class="account-profile-card-header">
+                <div class="account-profile-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
                 <div>
                     <div class="account-profile-kicker">Security</div>
                     <h2>Change password</h2>
@@ -66,22 +95,34 @@
             <div asp-validation-summary="All" class="account-profile-errors"></div>
 
             <div class="account-profile-field">
-                <label for="CurrentPassword">Current password</label>
-                <input id="CurrentPassword" name="CurrentPassword" type="password" autocomplete="current-password" />
+                <label for="CurrentPassword">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1"/><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Current password
+                </label>
+                <input id="CurrentPassword" name="CurrentPassword" type="password" autocomplete="current-password" placeholder="••••••••" />
             </div>
 
             <div class="account-profile-field">
-                <label for="NewPassword">New password</label>
-                <input id="NewPassword" name="NewPassword" type="password" autocomplete="new-password" />
+                <label for="NewPassword">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    New password
+                </label>
+                <input id="NewPassword" name="NewPassword" type="password" autocomplete="new-password" placeholder="••••••••" />
             </div>
 
             <div class="account-profile-field">
-                <label for="ConfirmPassword">Confirm new password</label>
-                <input id="ConfirmPassword" name="ConfirmPassword" type="password" autocomplete="new-password" />
+                <label for="ConfirmPassword">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    Confirm new password
+                </label>
+                <input id="ConfirmPassword" name="ConfirmPassword" type="password" autocomplete="new-password" placeholder="••••••••" />
             </div>
 
             <div class="account-profile-actions">
-                <button type="submit" class="account-profile-primary-btn">Change password</button>
+                <button type="submit" class="account-profile-primary-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Change password
+                </button>
             </div>
         </form>
     </div>
