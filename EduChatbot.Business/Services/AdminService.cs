@@ -134,7 +134,15 @@ public class AdminService : IAdminService
                     }
                 }
             }
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Duplicate PK — another admin already assigned this lecturer.
+                // Silently ignore since the desired state is already achieved.
+            }
         }
 
         var emailQueued = false;
@@ -650,23 +658,45 @@ public class AdminService : IAdminService
         var isLecturer = await _userManager.IsInRoleAsync(lecturer, ApplicationRoles.Lecturer);
         if (!isLecturer) return Failure("User is not a lecturer.");
 
-        var existing = await _context.LecturerCourses
-            .AnyAsync(lc => lc.LecturerId == lecturerId && lc.CourseId == courseId);
-        if (existing)
+        // Use SERIALIZABLE transaction to prevent two admins from assigning
+        // different lecturers to the same course at the same time.
+        await using var transaction = await _context.Database
+            .BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        try
         {
-            return Success("Lecturer is already assigned to this course.");
+            // A course can only have ONE lecturer assigned.
+            var currentAssignment = await _context.LecturerCourses
+                .Include(lc => lc.Lecturer)
+                .FirstOrDefaultAsync(lc => lc.CourseId == courseId);
+
+            if (currentAssignment != null)
+            {
+                await transaction.RollbackAsync();
+                if (currentAssignment.LecturerId == lecturerId)
+                {
+                    return Success("Lecturer is already assigned to this course.");
+                }
+                var assignedName = currentAssignment.Lecturer?.FullName ?? currentAssignment.Lecturer?.Email ?? "Another lecturer";
+                return Failure($"Course already has a lecturer assigned ({assignedName}). Remove them first before assigning a new one.");
+            }
+
+            var assignment = new LecturerCourse
+            {
+                LecturerId = lecturerId,
+                CourseId = courseId
+            };
+
+            _context.LecturerCourses.Add(assignment);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Success("Lecturer assigned to course successfully.");
         }
-
-        var assignment = new LecturerCourse
+        catch (DbUpdateException)
         {
-            LecturerId = lecturerId,
-            CourseId = courseId
-        };
-
-        _context.LecturerCourses.Add(assignment);
-        await _context.SaveChangesAsync();
-
-        return Success("Lecturer assigned to course successfully.");
+            await transaction.RollbackAsync();
+            return Failure("This course already has a lecturer assigned. Please refresh and try again.");
+        }
     }
 
     public async Task<AdminOperationResult> RemoveLecturerFromCourseAsync(string lecturerId, int courseId)
@@ -816,7 +846,15 @@ public class AdminService : IAdminService
                         CourseId = course.Id
                     });
                 }
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // Duplicate PK — lecturer already assigned to this course by another admin.
+                    // Silently ignore since the desired state is already achieved.
+                }
 
                 if (sendEmail)
                 {

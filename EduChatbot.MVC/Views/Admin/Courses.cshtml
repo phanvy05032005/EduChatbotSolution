@@ -124,7 +124,7 @@
                                                 @foreach (var lc in course.LecturerCourses)
                                                 {
                                                     <div style="display: inline-flex; align-items: center; background: rgba(228, 240, 246, 0.08); padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; margin-bottom: 0.2rem; font-size: 0.85rem;">
-                                                        <span style="margin-right: 0.3rem;">👤 @(lc.Lecturer?.FullName ?? lc.Lecturer?.Email)</span>
+                                                        <span style="margin-right: 0.3rem;">👤 @(lc.Lecturer?.FullName ?? "N/A") <span style="opacity:0.6; font-size:0.78rem;">(@(lc.Lecturer?.Email ?? ""))</span></span>
                                                         <form asp-controller="Admin" asp-action="RemoveLecturer" method="post" style="display:inline;">
                                                             @Html.AntiForgeryToken()
                                                             <input type="hidden" name="lecturerId" value="@lc.LecturerId" />
@@ -136,7 +136,9 @@
                                             }
                                         </div>
 
-                                        <!-- Assign lecturer form -->
+                                        @* Only show assign form if course has no lecturer yet (1 course = 1 lecturer) *@
+                                        @if (course.LecturerCourses.Count == 0)
+                                        {
                                         <form asp-controller="Admin" asp-action="AssignLecturer" method="post" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="courseId" value="@course.Id" />
@@ -144,15 +146,12 @@
                                                 <option value="" data-i18n="admin.courses.selectLecturer">-- Select lecturer --</option>
                                                 @foreach (var lec in Model.Lecturers)
                                                 {
-                                                    // Only show lecturers not yet assigned to this course
-                                                    if (!course.LecturerCourses.Any(lc => lc.LecturerId == lec.Id))
-                                                    {
-                                                        <option value="@lec.Id">@lec.FullName (@lec.Email)</option>
-                                                    }
+                                                    <option value="@lec.Id">@lec.FullName (@lec.Email)</option>
                                                 }
                                             </select>
                                             <button type="submit" data-i18n="admin.courses.assign" style="background: var(--admin-primary); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Assign</button>
                                         </form>
+                                        }
                                     </td>
                                     <td>
                                         <form asp-controller="Admin" asp-action="DeleteCourse" method="post" 
