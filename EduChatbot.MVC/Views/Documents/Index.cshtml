@@ -35,8 +35,8 @@
     @if (!Model.Documents.Any())
     {
         <div class="role-empty-panel">
-            <strong>Chưa có tài liệu nào được upload.</strong>
-            <span>Upload file PDF hoặc DOCX để hệ thống extract, chunk và tạo embedding.</span>
+            <strong data-i18n="docs.index.noDocuments">No documents uploaded yet.</strong>
+            <span data-i18n="docs.index.uploadHint">Upload PDF or DOCX file to extract, chunk, and embed.</span>
         </div>
     }
     else
@@ -48,7 +48,7 @@
                     <thead>
                         <tr>
                             <th>File</th>
-                            <th>Môn học</th>
+                            <th data-i18n="docs.index.course">Course</th>
                             <th>Match Score</th>
                             <th>Lecturer</th>
                             <th>Size</th>

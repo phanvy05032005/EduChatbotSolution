@@ -7,9 +7,9 @@
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Documents</div>
-            <h1>Pending <span class="admin-serif">Review</span></h1>
-            <p>Review documents whose subject match score is below the automatic approval threshold.</p>
+            <div class="admin-kicker" data-i18n="admin.courses.kicker">Documents</div>
+            <h1><span data-i18n="admin.pending.title">Pending</span> <span class="admin-serif" data-i18n="admin.pending.titleSerif">Review</span></h1>
+            <p data-i18n="admin.pending.subtitle">Review documents whose subject match score is below the automatic approval threshold.</p>
         </div>
     </div>
 
@@ -26,27 +26,27 @@
     @if (!Model.Any())
     {
         <section class="admin-card" style="padding:1.5rem;">
-            <strong>No documents are waiting for review.</strong>
+            <strong data-i18n="admin.pending.empty">No documents are waiting for review.</strong>
         </section>
     }
     else
     {
         <section class="admin-card admin-table-card">
             <div class="admin-card-header">
-                <h2>Documents waiting for admin decision</h2>
-                <span>@Model.Count pending</span>
+                <h2 data-i18n="admin.pending.heading">Documents waiting for admin decision</h2>
+                <span>@Model.Count <span data-i18n="admin.pending.pendingCount">pending</span></span>
             </div>
             <div class="table-responsive">
                 <table class="table admin-table mb-0">
                     <thead>
                         <tr>
-                            <th>File Name</th>
-                            <th>Lecturer</th>
-                            <th>Subject</th>
-                            <th>Match Score</th>
-                            <th>Upload Date</th>
-                            <th>Reason</th>
-                            <th>Actions</th>
+                            <th data-i18n="admin.pending.fileName">File Name</th>
+                            <th data-i18n="admin.pending.lecturer">Lecturer</th>
+                            <th data-i18n="admin.pending.subject">Subject</th>
+                            <th data-i18n="admin.pending.matchScore">Match Score</th>
+                            <th data-i18n="admin.pending.uploadDate">Upload Date</th>
+                            <th data-i18n="admin.pending.reason">Reason</th>
+                            <th data-i18n="admin.accounts.actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -64,13 +64,13 @@
                                         <form asp-controller="Admin" asp-action="ApproveDocument" method="post">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@document.Id" />
-                                            <button type="submit" class="admin-primary-btn">Approve</button>
+                                            <button type="submit" class="admin-primary-btn" data-i18n="admin.pending.approve">Approve</button>
                                         </form>
                                         <form asp-controller="Admin" asp-action="RejectDocument" method="post">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@document.Id" />
                                             <input type="hidden" name="reviewNote" value="Rejected by admin." />
-                                            <button type="submit" class="danger" style="background:none; border:none; color:var(--admin-danger); cursor:pointer;">Reject</button>
+                                            <button type="submit" class="danger" data-i18n="admin.pending.reject" style="background:none; border:none; color:var(--admin-danger); cursor:pointer;">Reject</button>
                                         </form>
                                     </div>
                                 </td>

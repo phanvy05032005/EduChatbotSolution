@@ -112,7 +112,7 @@ public class AdminService : IAdminService
             return Failure(string.Join(" ", roleResult.Errors.Select(error => error.Description)));
         }
 
-        // Phân công giảng viên dạy danh sách môn học đã chọn
+        // Assign lecturer to teach selected courses
         var assignedCourseNames = new List<string>();
         if (role == ApplicationRoles.Lecturer && courseIds != null && courseIds.Count > 0)
         {
@@ -147,13 +147,13 @@ public class AdminService : IAdminService
                     fullName.Trim(), email.Trim(), password, role,
                     assignedCourseNames.Count > 0 ? assignedCourseNames : null);
 
-                // IMPORTANT: Không gửi mail trực tiếp nữa -> đẩy vào queue để worker gửi nền.
+                // IMPORTANT: Do not send email directly -> push to queue for background worker sending.
                 await _emailQueueService.EnqueueAsync(email.Trim(), subject, body);
                 emailQueued = true;
             }
             catch
             {
-                // Không chặn quá trình tạo tài khoản nếu enqueue email lỗi
+                // Do not block account creation if email enqueue fails
                 emailQueued = false;
             }
         }
@@ -272,11 +272,11 @@ public class AdminService : IAdminService
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string emailKey = "";
             string nameKey = "";
@@ -298,7 +298,7 @@ public class AdminService : IAdminService
                 }
                 else
                 {
-                    return Failure("File Excel cần ít nhất 2 cột: Email và Họ tên.");
+                    return Failure("Excel file requires at least 2 columns: Email and FullName.");
                 }
             }
 
@@ -319,7 +319,7 @@ public class AdminService : IAdminService
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(fullName))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Email hoặc Họ tên.");
+                    errorMessages.Add($"Row {i + 1}: Missing Email or FullName.");
                     continue;
                 }
 
@@ -327,7 +327,7 @@ public class AdminService : IAdminService
                 if (existingUser != null)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Email đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Email already exists.");
                     continue;
                 }
 
@@ -354,7 +354,7 @@ public class AdminService : IAdminService
                 {
                     await _userManager.DeleteAsync(user);
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Không thể gán vai trò.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Cannot assign role.");
                     continue;
                 }
 
@@ -370,26 +370,26 @@ public class AdminService : IAdminService
                     }
                     catch
                     {
-                        // Không chặn import nếu enqueue email lỗi
+                        // Do not block import if email enqueue fails
                         emailQueueFailedCount++;
                     }
                 }
                 successCount++;
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} sinh viên.";
+            var msg = $"Successfully imported {successCount} student(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
             if (sendEmail)
             {
-                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                msg += $" Queued {emailQueuedCount} email(s).";
                 if (emailQueueFailedCount > 0)
                 {
-                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                    msg += $" Failed to queue {emailQueueFailedCount} email(s).";
                 }
             }
 
@@ -397,7 +397,7 @@ public class AdminService : IAdminService
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 
@@ -588,14 +588,14 @@ public class AdminService : IAdminService
     {
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(description))
         {
-            return Failure("Mã môn học, tên môn học và mô tả môn học không được để trống.");
+            return Failure("Course code, course name, and course description cannot be empty.");
         }
 
         var normalizedCode = code.Trim().ToUpperInvariant();
         var existing = await _context.Courses.AnyAsync(c => c.Code == normalizedCode);
         if (existing)
         {
-            return Failure($"Môn học có mã '{normalizedCode}' đã tồn tại.");
+            return Failure($"Course with code '{normalizedCode}' already exists.");
         }
 
         var course = new Course
@@ -608,7 +608,7 @@ public class AdminService : IAdminService
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
 
-        return Success("Tạo môn học thành công.");
+        return Success("Course created successfully.");
     }
 
     public async Task<AdminOperationResult> DeleteCourseAsync(int id)
@@ -616,13 +616,13 @@ public class AdminService : IAdminService
         var course = await _context.Courses.FindAsync(id);
         if (course == null)
         {
-            return Failure("Không tìm thấy môn học.");
+            return Failure("Course not found.");
         }
 
         _context.Courses.Remove(course);
         await _context.SaveChangesAsync();
 
-        return Success("Xóa môn học thành công.");
+        return Success("Course deleted successfully.");
     }
 
     public async Task<List<ApplicationUser>> GetLecturersAsync()
@@ -642,19 +642,19 @@ public class AdminService : IAdminService
     public async Task<AdminOperationResult> AssignLecturerToCourseAsync(string lecturerId, int courseId)
     {
         var lecturer = await _userManager.FindByIdAsync(lecturerId);
-        if (lecturer == null) return Failure("Không tìm thấy giảng viên.");
+        if (lecturer == null) return Failure("Lecturer not found.");
 
         var course = await _context.Courses.FindAsync(courseId);
-        if (course == null) return Failure("Không tìm thấy môn học.");
+        if (course == null) return Failure("Course not found.");
 
         var isLecturer = await _userManager.IsInRoleAsync(lecturer, ApplicationRoles.Lecturer);
-        if (!isLecturer) return Failure("Người dùng không phải giảng viên.");
+        if (!isLecturer) return Failure("User is not a lecturer.");
 
         var existing = await _context.LecturerCourses
             .AnyAsync(lc => lc.LecturerId == lecturerId && lc.CourseId == courseId);
         if (existing)
         {
-            return Success("Giảng viên đã được phân công dạy môn này.");
+            return Success("Lecturer is already assigned to this course.");
         }
 
         var assignment = new LecturerCourse
@@ -666,7 +666,7 @@ public class AdminService : IAdminService
         _context.LecturerCourses.Add(assignment);
         await _context.SaveChangesAsync();
 
-        return Success("Phân công giảng viên cho môn học thành công.");
+        return Success("Lecturer assigned to course successfully.");
     }
 
     public async Task<AdminOperationResult> RemoveLecturerFromCourseAsync(string lecturerId, int courseId)
@@ -675,13 +675,13 @@ public class AdminService : IAdminService
             .FirstOrDefaultAsync(lc => lc.LecturerId == lecturerId && lc.CourseId == courseId);
         if (assignment == null)
         {
-            return Failure("Không tìm thấy phân công dạy môn này.");
+            return Failure("Course assignment not found.");
         }
 
         _context.LecturerCourses.Remove(assignment);
         await _context.SaveChangesAsync();
 
-        return Success("Hủy phân công dạy môn học thành công.");
+        return Success("Lecturer course assignment removed successfully.");
     }
 
     public async Task<AdminOperationResult> ImportLecturersFromExcelAsync(Stream fileStream, bool sendEmail = true)
@@ -691,11 +691,11 @@ public class AdminService : IAdminService
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string emailKey = "";
             string nameKey = "";
@@ -711,7 +711,7 @@ public class AdminService : IAdminService
 
             if (string.IsNullOrEmpty(emailKey) || string.IsNullOrEmpty(nameKey) || string.IsNullOrEmpty(courseCodesKey))
             {
-                return Failure("File Excel Lecturer cần 3 cột: FullName, Email, CourseCodes.");
+                return Failure("Excel file requires 3 columns: FullName, Email, CourseCodes.");
             }
 
             int successCount = 0;
@@ -732,14 +732,14 @@ public class AdminService : IAdminService
                 if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(fullName))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Email hoặc Họ tên.");
+                    errorMessages.Add($"Row {i + 1}: Missing Email or FullName.");
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(rawCourseCodes))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes rỗng.");
+                    errorMessages.Add($"Row {i + 1} ({email}): CourseCodes is empty.");
                     continue;
                 }
 
@@ -747,11 +747,11 @@ public class AdminService : IAdminService
                 if (existingUser != null)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Email đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Email already exists.");
                     continue;
                 }
 
-                // Parse danh sách mã môn: tách theo dấu phẩy, trim, uppercase.
+                // Parse course codes list: split by comma, trim, uppercase.
                 var courseCodes = rawCourseCodes
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(x => x.Trim().ToUpperInvariant())
@@ -762,11 +762,11 @@ public class AdminService : IAdminService
                 if (courseCodes.Count == 0)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCodes không hợp lệ.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Invalid CourseCodes.");
                     continue;
                 }
 
-                // Validate tất cả course code phải tồn tại.
+                // Validate all course codes must exist.
                 var courses = await _context.Courses
                     .Where(c => courseCodes.Contains(c.Code))
                     .ToListAsync();
@@ -776,7 +776,7 @@ public class AdminService : IAdminService
                     var existingCodes = courses.Select(c => c.Code).ToHashSet();
                     var missing = courseCodes.Where(code => !existingCodes.Contains(code)).ToList();
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): CourseCode không tồn tại: {string.Join(", ", missing)}");
+                    errorMessages.Add($"Row {i + 1} ({email}): CourseCode does not exist: {string.Join(", ", missing)}");
                     continue;
                 }
 
@@ -803,11 +803,11 @@ public class AdminService : IAdminService
                 {
                     await _userManager.DeleteAsync(user);
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({email}): Không thể gán vai trò Lecturer.");
+                    errorMessages.Add($"Row {i + 1} ({email}): Cannot assign Lecturer role.");
                     continue;
                 }
 
-                // Tạo LecturerCourse
+                // Create LecturerCourse
                 foreach (var course in courses)
                 {
                     _context.LecturerCourses.Add(new LecturerCourse
@@ -822,7 +822,7 @@ public class AdminService : IAdminService
                 {
                     try
                     {
-                        var subject = "[EduChatbot] Thông tin tài khoản giảng viên mới";
+                        var subject = "[EduChatbot] New Lecturer Account Credentials";
                         var assignedCourseNames = courses.Select(c => $"{c.Code} - {c.Name}").ToList();
                         var body = BuildAccountEmailHtml(fullName, email, randomPassword, "Lecturer", assignedCourseNames);
 
@@ -838,19 +838,19 @@ public class AdminService : IAdminService
                 successCount++;
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} giảng viên.";
+            var msg = $"Successfully imported {successCount} lecturer(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
             if (sendEmail)
             {
-                msg += $" Đã đưa vào hàng đợi {emailQueuedCount} email.";
+                msg += $" Queued {emailQueuedCount} email(s).";
                 if (emailQueueFailedCount > 0)
                 {
-                    msg += $" Không thể đưa vào hàng đợi {emailQueueFailedCount} email.";
+                    msg += $" Failed to queue {emailQueueFailedCount} email(s).";
                 }
             }
 
@@ -858,7 +858,7 @@ public class AdminService : IAdminService
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 
@@ -869,11 +869,11 @@ public class AdminService : IAdminService
             var rows = MiniExcel.Query(fileStream).ToList();
             if (rows.Count <= 1)
             {
-                return Failure("File Excel không có dữ liệu hoặc trống.");
+                return Failure("The Excel file has no data or is empty.");
             }
 
             var header = rows[0] as IDictionary<string, object>;
-            if (header == null) return Failure("Định dạng file Excel không hợp lệ.");
+            if (header == null) return Failure("Invalid Excel file format.");
 
             string codeKey = "";
             string nameKey = "";
@@ -901,7 +901,7 @@ public class AdminService : IAdminService
                 }
                 else
                 {
-                    return Failure("File Excel cần ít nhất 2 cột: Code và Name.");
+                    return Failure("Excel file requires at least 2 columns: Code and Name.");
                 }
             }
 
@@ -921,7 +921,7 @@ public class AdminService : IAdminService
                 if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1}: Thiếu Mã môn hoặc Tên môn.");
+                    errorMessages.Add($"Row {i + 1}: Missing Course Code or Name.");
                     continue;
                 }
 
@@ -930,7 +930,7 @@ public class AdminService : IAdminService
                 if (existing)
                 {
                     failedCount++;
-                    errorMessages.Add($"Dòng {i + 1} ({code}): Mã môn học đã tồn tại.");
+                    errorMessages.Add($"Row {i + 1} ({code}): Course code already exists.");
                     continue;
                 }
 
@@ -950,10 +950,10 @@ public class AdminService : IAdminService
                 await _context.SaveChangesAsync();
             }
 
-            var msg = $"Nhập danh sách thành công {successCount} môn học.";
+            var msg = $"Successfully imported {successCount} course(s).";
             if (failedCount > 0)
             {
-                msg += $" Thất bại {failedCount} dòng. Chi tiết: {string.Join("; ", errorMessages.Take(5))}";
+                msg += $" Failed {failedCount} row(s). Details: {string.Join("; ", errorMessages.Take(5))}";
                 if (errorMessages.Count > 5) msg += "...";
             }
 
@@ -961,7 +961,7 @@ public class AdminService : IAdminService
         }
         catch (Exception ex)
         {
-            return Failure($"Lỗi khi xử lý file Excel: {ex.Message}");
+            return Failure($"Error processing Excel file: {ex.Message}");
         }
     }
 }

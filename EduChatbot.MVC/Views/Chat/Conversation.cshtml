@@ -28,26 +28,24 @@
                 <span aria-hidden="true"></span>
                 Academic mode
             </div>
-        </header>
-
-        <div id="chat-messages" class="chat-scroll">
+        </header>        <div id="chat-messages" class="chat-scroll">
             @if (Model.Messages == null || Model.Messages.Count == 0)
             {
                 <div id="chat-welcome" class="chat-empty-state">
-                    <h1>Hôm nay bạn muốn học gì?</h1>
+                    <h1 data-i18n="chat.welcome">What would you like to learn today?</h1>
 
                     <div class="suggestions-grid">
-                        <button type="button" class="suggestion-btn" data-question="ASP.NET Core MVC là gì?">
-                            ASP.NET Core MVC là gì?
+                        <button type="button" class="suggestion-btn" data-question="ASP.NET Core MVC là gì?" data-i18n="chat.suggestion1">
+                            What is ASP.NET Core MVC?
                         </button>
-                        <button type="button" class="suggestion-btn" data-question="Giải thích Entity Framework Core">
-                            Giải thích Entity Framework Core
+                        <button type="button" class="suggestion-btn" data-question="Giải thích Entity Framework Core" data-i18n="chat.suggestion2">
+                            Explain Entity Framework Core
                         </button>
-                        <button type="button" class="suggestion-btn" data-question="Repository Pattern hoạt động ra sao?">
-                            Repository Pattern hoạt động ra sao?
+                        <button type="button" class="suggestion-btn" data-question="Repository Pattern hoạt động ra sao?" data-i18n="chat.suggestion3">
+                            How does Repository Pattern work?
                         </button>
-                        <button type="button" class="suggestion-btn" data-question="So sánh SQL Server và PostgreSQL">
-                            So sánh SQL Server và PostgreSQL
+                        <button type="button" class="suggestion-btn" data-question="So sánh SQL Server và PostgreSQL" data-i18n="chat.suggestion4">
+                            Compare SQL Server and PostgreSQL
                         </button>
                     </div>
                 </div>
@@ -104,7 +102,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="conversation-id" value="@Model.Id" />
                 <div class="chat-input-wrapper">
-                    <textarea id="chat-input" rows="1" placeholder="Hỏi về tài liệu học tập..."></textarea>
+                    <textarea id="chat-input" rows="1" placeholder="Ask about learning materials..." data-i18n-placeholder="chat.inputPlaceholder"></textarea>
                     <div class="chat-input-toolbar">
                         <div class="chat-input-tools" aria-hidden="true">
                             <span>+</span>
@@ -134,7 +132,7 @@
                     </div>
                 </div>
             </form>
-            <div class="chat-disclaimer">AI có thể mắc lỗi. Hãy đối chiếu với tài liệu gốc.</div>
+            <div class="chat-disclaimer" data-i18n="chat.aiDisclaimer">AI can make mistakes. Please cross-check with original documents.</div>
         </div>
     </main>
 </section>

@@ -1,15 +1,15 @@
 @model EduChatbot.MVC.Models.AdminCoursesViewModel
 
 @{
-    ViewData["Title"] = "Quản lý Môn học & Phân công";
+    ViewData["Title"] = "Courses & Assignments";
 }
 
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Môn học</div>
-            <h1>Quản lý <span class="admin-serif">Môn học & Phân công</span></h1>
-            <p>Tạo môn học mới và phân công quyền đăng tải tài liệu cho từng giảng viên.</p>
+            <div class="admin-kicker" data-i18n="admin.courses.kicker">Courses</div>
+            <h1><span data-i18n="admin.courses.title">Manage</span> <span class="admin-serif" data-i18n="admin.courses.titleSerif">Courses & Assignments</span></h1>
+            <p data-i18n="admin.courses.subtitle">Create new courses and assign document upload permissions to lecturers.</p>
         </div>
     </div>
 
@@ -25,71 +25,74 @@
 
     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-top: 1rem;">
         
-        <!-- Cột trái: Form tạo môn học mới -->
+        <!-- Left column: Create new course form -->
         <div>
             <section class="admin-card">
                 <div class="admin-card-header">
-                    <h2>Tạo Môn học mới</h2>
+                    <h2 data-i18n="admin.courses.createNew">Create New Course</h2>
                 </div>
                 <div style="padding: 1.5rem;">
                     <form asp-controller="Admin" asp-action="CreateCourse" method="post">
                         @Html.AntiForgeryToken()
                         <div style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mã môn học (Code)</label>
-                            <input type="text" name="code" placeholder="Ví dụ: PRN222" required 
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-i18n="admin.courses.courseCode">Course Code</label>
+                            <input type="text" name="code" placeholder="e.g. PRN222" required 
+                                   data-i18n-placeholder="admin.courses.courseCodePlaceholder"
                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
                         </div>
                         <div style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Tên môn học (Name)</label>
-                            <input type="text" name="name" placeholder="Ví dụ: C# & .NET Cloud" required 
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-i18n="admin.courses.courseName">Course Name</label>
+                            <input type="text" name="name" placeholder="e.g. C# &amp; .NET Cloud" required 
+                                   data-i18n-placeholder="admin.courses.courseNamePlaceholder"
                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
                         </div>
                         <div style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mô tả môn học</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-i18n="admin.courses.courseDesc">Course Description</label>
                             <textarea name="description" rows="6" required
-                                      placeholder="Ví dụ: ASP.NET Core, MVC, Entity Framework Core, Repository Pattern, Dependency Injection, Authentication, Authorization"
+                                      placeholder="e.g. ASP.NET Core, MVC, Entity Framework Core, Repository Pattern, Dependency Injection, Authentication, Authorization"
+                                      data-i18n-placeholder="admin.courses.courseDescPlaceholder"
                                       style="width: 100%; padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);"></textarea>
                         </div>
-                        <button type="submit" class="admin-primary-btn" style="width: 100%;">Tạo môn học</button>
+                        <button type="submit" class="admin-primary-btn" style="width: 100%;" data-i18n="admin.courses.createCourse">Create Course</button>
                     </form>
                 </div>
             </section>
 
             <section class="admin-card" style="margin-top: 2rem;">
                 <div class="admin-card-header">
-                    <h2>Nhập Môn học bằng Excel</h2>
+                    <h2 data-i18n="admin.courses.importExcel">Import Courses via Excel</h2>
                 </div>
                 <div style="padding: 1.5rem;">
                     <form asp-controller="Admin" asp-action="ImportCourses" method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
                         @Html.AntiForgeryToken()
                         <input type="file" name="excelFile" accept=".xlsx" required style="padding: 0.5rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text);" />
                         <div style="display: flex; gap: 0.5rem; width: 100%;">
-                            <button type="submit" class="admin-primary-btn" style="flex: 1; height: auto;">Nhập môn học</button>
-                            <a asp-controller="Admin" asp-action="DownloadCourseTemplate" class="admin-primary-btn" style="background: rgba(228, 240, 246, 0.1); color: var(--admin-text); border: 1px solid var(--admin-border); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.9rem; height: auto; text-align: center;">Tải mẫu Excel</a>
+                            <button type="submit" class="admin-primary-btn" style="flex: 1; height: auto;" data-i18n="admin.courses.importCourses">Import Courses</button>
+                            <a asp-controller="Admin" asp-action="DownloadCourseTemplate" class="admin-primary-btn" data-i18n="admin.courses.downloadTemplate" style="background: rgba(228, 240, 246, 0.1); color: var(--admin-text); border: 1px solid var(--admin-border); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.9rem; height: auto; text-align: center;">Download Template</a>
                         </div>
                     </form>
-                    <small style="display: block; margin-top: 0.75rem; color: rgba(228, 240, 246, 0.65); line-height: 1.4;">
-                        Yêu cầu file Excel (.xlsx) chứa các cột: <strong>Code</strong> (Mã môn học), <strong>Name</strong> (Tên môn học), và <strong>Description</strong> (Mô tả).
+                    <small style="display: block; margin-top: 0.75rem; color: rgba(228, 240, 246, 0.65); line-height: 1.4;" data-i18n="admin.courses.requireExcel">
+                        Requires an Excel file (.xlsx) with columns: Code (Course Code), Name (Course Name), and Description.
                     </small>
                 </div>
             </section>
         </div>
 
-        <!-- Cột phải: Danh sách môn học và phân công giảng viên -->
+        <!-- Right column: Course list and lecturer assignments -->
         <div>
             <section class="admin-card admin-table-card">
                 <div class="admin-card-header">
-                    <h2>Danh sách môn học</h2>
-                    <span>@Model.Courses.Count môn học</span>
+                    <h2 data-i18n="admin.courses.courseList">Course List</h2>
+                    <span>@Model.Courses.Count <span data-i18n="admin.courses.courses">course(s)</span></span>
                 </div>
                 <div class="table-responsive">
                     <table class="table admin-table mb-0">
                         <thead>
                             <tr>
-                                <th>Mã Môn</th>
-                                <th>Tên Môn</th>
-                                <th>Giảng viên phụ trách</th>
-                                <th>Thao tác</th>
+                                <th data-i18n="admin.courses.code">Code</th>
+                                <th data-i18n="admin.courses.name">Course Name</th>
+                                <th data-i18n="admin.courses.assignedLecturers">Assigned Lecturers</th>
+                                <th data-i18n="admin.accounts.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -100,16 +103,21 @@
                                     <td>
                                         <strong>@course.Name</strong>
                                         <div style="margin-top:0.35rem; color:rgba(228, 240, 246, 0.68); font-size:0.82rem; line-height:1.4;">
-                                            @(string.IsNullOrWhiteSpace(course.Description)
-                                                ? "Chưa có mô tả môn học."
-                                                : course.Description)
+                                            @if (string.IsNullOrWhiteSpace(course.Description))
+                                            {
+                                                <span data-i18n="admin.courses.noDesc">No description available.</span>
+                                            }
+                                            else
+                                            {
+                                                @course.Description
+                                            }
                                         </div>
                                     </td>
                                     <td>
                                         <div style="margin-bottom: 0.5rem;">
                                             @if (course.LecturerCourses.Count == 0)
                                             {
-                                                <em style="color: rgba(228, 240, 246, 0.65);">Chưa phân công giảng viên</em>
+                                                <em style="color: rgba(228, 240, 246, 0.65);" data-i18n="admin.courses.noLecturer">No lecturer assigned</em>
                                             }
                                             else
                                             {
@@ -128,29 +136,31 @@
                                             }
                                         </div>
 
-                                        <!-- Form phân công giảng viên -->
+                                        <!-- Assign lecturer form -->
                                         <form asp-controller="Admin" asp-action="AssignLecturer" method="post" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="courseId" value="@course.Id" />
                                             <select name="lecturerId" required style="padding: 0.3rem; border: 1px solid var(--admin-border); border-radius: 4px; background: var(--admin-bg); color: var(--admin-text); font-size: 0.85rem;">
-                                                <option value="">-- Chọn giảng viên --</option>
+                                                <option value="" data-i18n="admin.courses.selectLecturer">-- Select lecturer --</option>
                                                 @foreach (var lec in Model.Lecturers)
                                                 {
-                                                    // Chỉ hiển thị giảng viên chưa được phân công môn này
+                                                    // Only show lecturers not yet assigned to this course
                                                     if (!course.LecturerCourses.Any(lc => lc.LecturerId == lec.Id))
                                                     {
                                                         <option value="@lec.Id">@lec.FullName (@lec.Email)</option>
                                                     }
                                                 }
                                             </select>
-                                            <button type="submit" style="background: var(--admin-primary); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Phân công</button>
+                                            <button type="submit" data-i18n="admin.courses.assign" style="background: var(--admin-primary); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Assign</button>
                                         </form>
                                     </td>
                                     <td>
-                                        <form asp-controller="Admin" asp-action="DeleteCourse" method="post" onsubmit="return confirm('Xóa môn học này sẽ làm mất liên kết với các tài liệu đã tải lên?');">
+                                        <form asp-controller="Admin" asp-action="DeleteCourse" method="post" 
+                                              data-i18n-confirm="admin.courses.confirmDelete" 
+                                              data-i18n-confirm-en="Deleting this course will remove all associated document links. Continue?">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@course.Id" />
-                                            <button type="submit" class="danger" style="background:none; border:none; color:var(--admin-danger); cursor:pointer; font-size: 0.9rem;">Xóa</button>
+                                            <button type="submit" class="danger" data-i18n="admin.accounts.delete" style="background:none; border:none; color:var(--admin-danger); cursor:pointer; font-size: 0.9rem;">Delete</button>
                                         </form>
                                     </td>
                                 </tr>

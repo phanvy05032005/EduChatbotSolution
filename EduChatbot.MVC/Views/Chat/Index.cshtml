@@ -14,7 +14,7 @@
         <header class="chat-main-header">
             <div class="chat-header-topic">
                 <span>EDU &middot; CHAT</span>
-                <strong>Cuộc trò chuyện</strong>
+                <strong data-i18n="chat.conversations">Conversations</strong>
             </div>
             <div class="chat-mode-pill">
                 <span aria-hidden="true"></span>
@@ -25,25 +25,25 @@
         <div class="chat-list-panel">
             <div class="chat-list-heading">
                 <div class="chat-kicker">Your conversations</div>
-                <h1>Học tập, khám phá,<br />với tài liệu của bạn.</h1>
+                <h1 data-i18n="chat.heroSubtitle">Learn, explore,<br />with your documents.</h1>
             </div>
 
             <div class="chat-new-card-wrap" style="margin-bottom: 1.5rem; background: var(--chat-panel, #101624); border: 1px solid var(--chat-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                 <form asp-controller="Chat" asp-action="Conversation" method="get" style="display: flex; flex-direction: column; gap: 1rem;">
                     <div>
-                        <strong style="display: block; font-size: 1.1rem; color: var(--chat-text); margin-bottom: 0.2rem;">Bắt đầu Chat mới</strong>
-                        <small style="color: var(--chat-muted); font-size: 0.9rem;">Chọn môn học để giới hạn phạm vi thảo luận của AI đúng tài liệu học tập bên trong môn đó.</small>
+                        <strong style="display: block; font-size: 1.1rem; color: var(--chat-text); margin-bottom: 0.2rem;" data-i18n="chat.startNew">Start new Chat</strong>
+                        <small style="color: var(--chat-muted); font-size: 0.9rem;" data-i18n="chat.selectCourseDesc">Select a course to limit the AI's discussion scope to the learning materials of that course.</small>
                     </div>
                     <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
                         <select name="courseId" required style="flex-grow: 1; min-width: 200px; padding: 0.6rem 1rem; border: 1px solid var(--chat-border); border-radius: 8px; background: rgba(228, 240, 246, 0.04); color: var(--chat-text); font-family: inherit; font-size: 0.95rem;">
-                            <option value="" style="background: var(--chat-panel); color: var(--chat-text);">-- Chọn Môn học --</option>
+                            <option value="" style="background: var(--chat-panel); color: var(--chat-text);" data-i18n="chat.selectCourse">-- Select Course --</option>
                             @foreach (var course in (ViewBag.Courses as List<EduChatbot.Models.Course> ?? []))
                             {
                                 <option value="@course.Id" style="background: var(--chat-panel); color: var(--chat-text);">[@course.Code] - @course.Name</option>
                             }
                         </select>
                         <button type="submit" style="background: #2563eb; color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.5rem;">
-                            Tạo Chat <span>+</span>
+                            <span data-i18n="chat.createChat">Create Chat</span> <span>+</span>
                         </button>
                     </div>
                 </form>
@@ -54,7 +54,7 @@
                 <div class="chat-empty-panel">
                     <div class="chat-empty-mark">AI</div>
                     <h2>Start your first conversation</h2>
-                    <p>Bạn chưa có cuộc trò chuyện nào. Hãy tạo cuộc trò chuyện mới để bắt đầu khám phá tài liệu.</p>
+                    <p data-i18n="chat.noConversations">You don't have any conversations yet. Create a new one to start exploring your documents.</p>
                 </div>
             }
             else

@@ -11,9 +11,9 @@
 <div class="admin-page admin-page-narrow">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Accounts · @Model.AccountType</div>
-            <h1>@(Model.IsEdit ? "Chỉnh sửa" : "Tạo mới") <span class="admin-serif">tài khoản</span></h1>
-            <p>Maintain @Model.AccountType.ToLowerInvariant() identity information.</p>
+            <div class="admin-kicker"><span data-i18n="admin.accounts.accounts">Accounts</span> · @Model.AccountType</div>
+            <h1><span data-i18n="@(Model.IsEdit ? "admin.form.edit" : "admin.form.create")">@(Model.IsEdit ? "Edit" : "Create")</span> <span class="admin-serif" data-i18n="admin.form.account">Account</span></h1>
+            <p data-i18n="admin.form.maintainDesc">Maintain @Model.AccountType.ToLowerInvariant() identity information.</p>
         </div>
     </div>
 
@@ -25,13 +25,13 @@
         <div asp-validation-summary="ModelOnly" class="admin-form-errors"></div>
 
         <div class="admin-field">
-            <label asp-for="FullName">Full Name</label>
+            <label asp-for="FullName" data-i18n="admin.form.fullName">Full Name</label>
             <input asp-for="FullName" maxlength="100" />
             <span asp-validation-for="FullName" class="admin-validation"></span>
         </div>
 
         <div class="admin-field">
-            <label asp-for="Email">Email</label>
+            <label asp-for="Email" data-i18n="admin.accounts.email">Email</label>
             <input asp-for="Email" />
             <span asp-validation-for="Email" class="admin-validation"></span>
         </div>
@@ -39,7 +39,7 @@
         @if (!Model.IsEdit)
         {
             <div class="admin-field">
-                <label asp-for="Password">Password</label>
+                <label asp-for="Password" data-i18n="admin.form.password">Password</label>
                 <input asp-for="Password" />
                 <span asp-validation-for="Password" class="admin-validation"></span>
             </div>
@@ -47,16 +47,17 @@
             @if (Model.AccountType == EduChatbot.Models.Identity.ApplicationRoles.Lecturer)
             {
                 <div class="admin-field">
-                    <label>Môn học phụ trách</label>
+                    <label data-i18n="admin.form.assignedCourses">Assigned Courses</label>
 
-                    <input id="courseSearch" type="search" placeholder="Tìm theo mã hoặc tên môn (ví dụ: PRN222, .NET...)"
+                    <input id="courseSearch" type="search" placeholder="Search by code or name (e.g. PRN222, .NET...)"
+                           data-i18n-placeholder="admin.form.searchCourses"
                            style="min-height: 44px; border: 1px solid rgba(228, 240, 246, 0.12); border-radius: 12px; outline: 0; background: rgba(228, 240, 246, 0.04); color: #e4f0f6; font: inherit; padding: 0.65rem 0.9rem;" />
 
                     <select id="courseSelect" name="SelectedCourseIds" multiple size="8"
                             style="width: 100%; border: 1px solid rgba(228, 240, 246, 0.12); border-radius: 12px; background: rgba(228, 240, 246, 0.04); color: #e4f0f6; font: inherit; padding: 0.6rem 0.75rem;">
                         @if (Model.AvailableCourses.Count == 0)
                         {
-                            <option value="" disabled>Chưa có môn học nào được tạo. Hãy tạo môn học trước.</option>
+                            <option value="" disabled data-i18n="admin.form.noCourses">No courses available. Please create courses first.</option>
                         }
                         else
                         {
@@ -67,22 +68,22 @@
                         }
                     </select>
 
-                    <div style="color: rgba(228, 240, 246, 0.65); font-size: 0.85rem;">
-                        Giữ phím <strong>Cmd</strong> (macOS) / <strong>Ctrl</strong> (Windows) để chọn nhiều môn.
+                    <div style="color: rgba(228, 240, 246, 0.65); font-size: 0.85rem;" data-i18n="admin.form.holdToSelect">
+                        Hold Cmd (macOS) / Ctrl (Windows) to select multiple courses.
                     </div>
                 </div>
             }
 
-            <p style="margin: 0.5rem 0 0; color: rgba(228, 240, 246, 0.68); font-size: 0.9rem;">
-                Hệ thống sẽ tự động gửi thông tin tài khoản đến email người dùng sau khi tạo thành công.
+            <p style="margin: 0.5rem 0 0; color: rgba(228, 240, 246, 0.68); font-size: 0.9rem;" data-i18n="admin.form.autoSendEmail">
+                The system will automatically send account credentials to the user's email after successful creation.
             </p>
         }
 
         <div class="admin-form-actions">
-            <button type="submit" class="admin-primary-btn">Save Account</button>
+            <button type="submit" class="admin-primary-btn" data-i18n="admin.form.save">Save Account</button>
             <a asp-controller="Admin"
                asp-action="@returnAction"
-               class="admin-secondary-btn">Cancel</a>
+               class="admin-secondary-btn" data-i18n="admin.form.cancel">Cancel</a>
         </div>
     </form>
 </div>
@@ -103,7 +104,7 @@
 
                 options.forEach(opt => {
                     const haystack = normalize(opt.getAttribute('data-search') || opt.text);
-                    // option disabled message: luôn hiển thị
+                    // disabled option message: always visible
                     if (opt.disabled) {
                         opt.hidden = false;
                         return;

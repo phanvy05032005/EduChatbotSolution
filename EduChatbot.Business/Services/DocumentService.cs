@@ -229,7 +229,7 @@ public class DocumentService : IDocumentService
             return new DocumentUploadResult
             {
                 IsSuccess = false,
-                Message = "Môn học không tồn tại."
+                Message = "Course not found."
             };
         }
 
@@ -238,7 +238,7 @@ public class DocumentService : IDocumentService
             return new DocumentUploadResult
             {
                 IsSuccess = false,
-                Message = "Môn học chưa có mô tả để tính độ phù hợp tài liệu."
+                Message = "Course does not have a description to calculate match score."
             };
         }
 
@@ -247,7 +247,7 @@ public class DocumentService : IDocumentService
             return new DocumentUploadResult
             {
                 IsSuccess = false,
-                Message = "Không xác định được giảng viên đang đăng nhập."
+                Message = "Unable to determine the logged-in lecturer."
             };
         }
 
@@ -259,21 +259,21 @@ public class DocumentService : IDocumentService
                 return new DocumentUploadResult
                 {
                     IsSuccess = false,
-                    Message = "Không tìm thấy tài khoản giảng viên đang đăng nhập."
+                    Message = "Logged-in lecturer account not found."
                 };
             }
 
             var isAdmin = await _userManager.IsInRoleAsync(user, ApplicationRoles.Admin);
             if (!isAdmin)
             {
-                // Business rule bắt buộc: giảng viên chỉ được upload tài liệu cho môn học đã được Admin phân công.
+                // Business rule: lecturers can only upload documents for courses assigned by Admin.
                 var isAssigned = await _courseRepository.IsLecturerAssignedToCourseAsync(uploadedById, courseId);
                 if (!isAssigned)
                 {
                     return new DocumentUploadResult
                     {
                         IsSuccess = false,
-                        Message = "Bạn không được phân công giảng dạy môn học này."
+                        Message = "You are not assigned to teach this course."
                     };
                 }
             }
@@ -285,7 +285,7 @@ public class DocumentService : IDocumentService
             return new DocumentUploadResult
             {
                 IsSuccess = false,
-                Message = "Bạn đã upload tài liệu có cùng tên file. Vui lòng đổi tên file hoặc xóa tài liệu cũ trước khi upload lại.",
+                Message = "You have already uploaded a document with the same file name. Please rename the file or delete the old document before uploading again.",
                 Status = DocumentStatuses.Failed
             };
         }
@@ -312,7 +312,7 @@ public class DocumentService : IDocumentService
                 return new DocumentUploadResult
                 {
                     IsSuccess = false,
-                    Message = "Không extract được nội dung text từ file. Vui lòng kiểm tra lại PDF/DOCX.",
+                    Message = "Failed to extract text content from the file. Please check your PDF/DOCX file.",
                     Status = DocumentStatuses.Failed
                 };
             }
@@ -342,8 +342,8 @@ public class DocumentService : IDocumentService
                 SubjectName = course.Name,
                 MatchScore = matchScore,
                 ValidationResult = isAutoApproved
-                    ? $"Match score {matchScore:0.00} đạt ngưỡng tự động duyệt {AutoApproveThreshold:0}."
-                    : $"Match score {matchScore:0.00} thấp hơn ngưỡng {AutoApproveThreshold:0}; cần Admin review.",
+                    ? $"Match score {matchScore:0.00} meets the auto-approve threshold of {AutoApproveThreshold:0}."
+                    : $"Match score {matchScore:0.00} is below the threshold of {AutoApproveThreshold:0}; requires Admin review.",
                 Chunks = documentChunks
             };
 
@@ -353,8 +353,8 @@ public class DocumentService : IDocumentService
             {
                 IsSuccess = true,
                 Message = isAutoApproved
-                    ? "Tài liệu phù hợp với môn học và đã được index vào Vector Database."
-                    : "Tài liệu đã được gửi vào hàng chờ Admin review.",
+                    ? "The document matches the course and has been indexed in the Vector Database."
+                    : "The document has been submitted to the queue for Admin review.",
                 DocumentId = document.Id,
                 ChunkCount = document.ChunkCount,
                 Status = document.Status
@@ -371,7 +371,7 @@ public class DocumentService : IDocumentService
 
             var message = ex is InvalidOperationException or ArgumentException
                 ? ex.Message
-                : "Xử lý tài liệu thất bại. Vui lòng kiểm tra file hoặc database.";
+                : "Document processing failed. Please check the file or database.";
 
             return new DocumentUploadResult
             {
@@ -487,23 +487,23 @@ public class DocumentService : IDocumentService
     {
         if (string.IsNullOrWhiteSpace(fileName))
         {
-            return "Vui lòng chọn file cần upload.";
+            return "Please select a file to upload.";
         }
 
         if (fileSize <= 0)
         {
-            return "File upload không hợp lệ.";
+            return "Invalid uploaded file.";
         }
 
         if (fileSize > _documentUploadRules.MaxFileSizeBytes)
         {
-            return "File không được vượt quá 10 MB.";
+            return "File size cannot exceed 10 MB.";
         }
 
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         if (!_documentUploadRules.IsAllowedExtension(extension))
         {
-            return "Chỉ hỗ trợ file PDF hoặc DOCX.";
+            return "Only PDF or DOCX files are supported.";
         }
 
         return string.Empty;

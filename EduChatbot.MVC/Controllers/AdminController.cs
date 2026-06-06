@@ -115,7 +115,7 @@ public class AdminController : Controller
             model.Email,
             model.Password!,
             model.AccountType,
-            // Tài khoản do Admin tạo phải tự động gửi thông tin đăng nhập cho người dùng.
+            // Accounts created by Admin must automatically send login credentials to the user.
             true,
             model.SelectedCourseIds);
 
@@ -312,18 +312,18 @@ public class AdminController : Controller
     {
         if (excelFile == null || excelFile.Length == 0)
         {
-            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            TempData["AdminError"] = "Please select an Excel file.";
             return RedirectToAction(nameof(Students));
         }
 
         if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            TempData["AdminError"] = "The system only supports .xlsx file format.";
             return RedirectToAction(nameof(Students));
         }
 
         await using var stream = excelFile.OpenReadStream();
-        // Import sinh viên cũng tự động gửi email để sinh viên nhận thông tin đăng nhập ngay.
+        // Student import also automatically sends emails so students receive their credentials immediately.
         var result = await _adminService.ImportStudentsFromExcelAsync(stream, true);
 
         if (result.IsSuccess)
@@ -358,7 +358,7 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(description))
         {
-            TempData["AdminError"] = "Mã môn học, tên môn học và mô tả môn học không được để trống.";
+            TempData["AdminError"] = "Course code, course name, and course description cannot be empty.";
             return RedirectToAction(nameof(Courses));
         }
 
@@ -458,13 +458,13 @@ public class AdminController : Controller
     {
         if (excelFile == null || excelFile.Length == 0)
         {
-            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            TempData["AdminError"] = "Please select an Excel file.";
             return RedirectToAction(nameof(Lecturers));
         }
 
         if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            TempData["AdminError"] = "The system only supports .xlsx file format.";
             return RedirectToAction(nameof(Lecturers));
         }
 
@@ -488,13 +488,13 @@ public class AdminController : Controller
     {
         if (excelFile == null || excelFile.Length == 0)
         {
-            TempData["AdminError"] = "Vui lòng chọn file Excel.";
+            TempData["AdminError"] = "Please select an Excel file.";
             return RedirectToAction(nameof(Courses));
         }
 
         if (!Path.GetExtension(excelFile.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["AdminError"] = "Hệ thống chỉ hỗ trợ file định dạng .xlsx.";
+            TempData["AdminError"] = "The system only supports .xlsx file format.";
             return RedirectToAction(nameof(Courses));
         }
 

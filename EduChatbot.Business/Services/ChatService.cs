@@ -45,7 +45,7 @@ public class ChatService : IChatService
         var conversation = new ChatConversation
         {
             UserId = userId,
-            Title = "Cuộc trò chuyện mới",
+            Title = "New conversation",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CourseId = courseId
@@ -56,7 +56,7 @@ public class ChatService : IChatService
 
     public async Task<ChatMessage> SendMessageAsync(int conversationId, string userId, string question)
     {
-        // Bước 1: Lưu message của user vào DB.
+        // Step 1: Save user message to DB.
         var userMessage = new ChatMessage
         {
             ConversationId = conversationId,
@@ -69,24 +69,24 @@ public class ChatService : IChatService
         var conversation = await _chatRepository.GetConversationWithMessagesAsync(conversationId, userId);
         int? courseId = conversation?.CourseId;
 
-        // Bước 2: Tạo embedding cho câu hỏi và search chunks liên quan bằng cosine similarity kèm CourseId.
+        // Step 2: Create embedding for question and search related chunks by cosine similarity with CourseId.
         var questionEmbedding = await _embeddingService.CreateEmbeddingAsync(question);
         var chunks = await _chatRepository.SearchChunksAsync(questionEmbedding, courseId);
 
-        // Bước 3: Build prompt context từ chunks.
+        // Step 3: Build prompt context from chunks.
         var context = BuildPromptContext(chunks);
 
-        // Bước 4: Gọi OpenRouter API.
+        // Step 4: Call OpenRouter API.
         var aiResponseText = await CallLlmAsync(question, context);
 
-        // Bước 5: Build source citation.
+        // Step 5: Build source citation.
         var sourceCitations = chunks
             .Where(c => c.Document != null)
             .Select(c => new { doc = c.Document!.FileName, chunk = c.ChunkIndex })
             .Distinct()
             .ToList();
 
-        // Bước 6: Lưu AI response vào DB.
+        // Step 6: Save AI response to DB.
         var aiMessage = new ChatMessage
         {
             ConversationId = conversationId,
@@ -99,7 +99,7 @@ public class ChatService : IChatService
         };
         await _chatRepository.AddMessageAsync(aiMessage);
 
-        // Bước 7: Cập nhật title conversation nếu là message đầu tiên.
+        // Step 7: Update conversation title if this is the first message.
         conversation = await _chatRepository.GetConversationWithMessagesAsync(conversationId, userId);
         if (conversation != null)
         {
@@ -122,17 +122,17 @@ public class ChatService : IChatService
     {
         if (chunks.Count == 0)
         {
-            return "Không tìm thấy tài liệu liên quan trong hệ thống.";
+            return "No related documents found in the system.";
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("Dưới đây là các đoạn tài liệu liên quan được tìm thấy trong hệ thống:");
+        sb.AppendLine("Below are the relevant document segments found in the system:");
         sb.AppendLine();
 
         foreach (var chunk in chunks)
         {
             var docName = chunk.Document?.FileName ?? "Unknown";
-            sb.AppendLine($"--- Tài liệu: {docName} | Chunk #{chunk.ChunkIndex} ---");
+            sb.AppendLine($"--- Document: {docName} | Chunk #{chunk.ChunkIndex} ---");
             sb.AppendLine(chunk.Content);
             sb.AppendLine();
         }
@@ -153,17 +153,16 @@ public class ChatService : IChatService
                     {
                         role = "system",
                         content = """
-                        Bạn là trợ lý học tập AI của hệ thống EduChatbot. Nhiệm vụ của bạn là trả lời câu hỏi
-                        của sinh viên dựa trên nội dung tài liệu được cung cấp bên dưới.
-                        - Trả lời bằng tiếng Việt, rõ ràng và dễ hiểu.
-                        - Nếu tài liệu không chứa thông tin liên quan, hãy nói rõ và cố gắng trả lời dựa trên kiến thức chung.
-                        - Luôn trích dẫn nguồn tài liệu khi có thể.
+                        You are the AI learning assistant for the EduChatbot system. Your task is to answer the student's question based on the content of the documents provided below.
+                        - Answer in the same language as the student's question.
+                        - If the documents do not contain the relevant information, clearly state that and try to answer based on general knowledge.
+                        - Always cite source documents when possible.
                         """
                     },
                     new
                     {
                         role = "user",
-                        content = $"Ngữ cảnh tài liệu:\n{context}\n\nCâu hỏi của sinh viên: {question}"
+                        content = $"Document context:\n{context}\n\nStudent question: {question}"
                     }
                 }
             };
@@ -180,7 +179,7 @@ public class ChatService : IChatService
 
             if (!response.IsSuccessStatusCode)
             {
-                return $"Xin lỗi, hệ thống AI đang gặp sự cố (HTTP {(int)response.StatusCode}). Vui lòng thử lại sau.";
+                return $"Sorry, the AI system is experiencing issues (HTTP {(int)response.StatusCode}). Please try again later.";
             }
 
             using var doc = JsonDocument.Parse(responseBody);
@@ -190,11 +189,11 @@ public class ChatService : IChatService
                 .GetProperty("content")
                 .GetString();
 
-            return content ?? "Không nhận được phản hồi từ AI.";
+            return content ?? "No response received from AI.";
         }
         catch (Exception ex)
         {
-            return $"Xin lỗi, không thể kết nối đến AI: {ex.Message}";
+            return $"Sorry, could not connect to AI: {ex.Message}";
         }
     }
 

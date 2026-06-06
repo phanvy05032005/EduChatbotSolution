@@ -4,18 +4,18 @@
     ViewData["Title"] = "Role Management";
     var roleMeta = new Dictionary<string, (string Tone, string Icon, string Description)>
     {
-        ["Student"] = ("success", "♙", "Hỏi đáp về tài liệu đã upload, xem lịch sử trò chuyện cá nhân."),
-        ["Lecturer"] = ("accent", "♧", "Upload, quản lý và chỉnh sửa tài liệu giảng dạy."),
-        ["Admin"] = ("light", "◇", "Toàn quyền quản trị hệ thống và tài khoản.")
+        ["Student"] = ("success", "♙", "Ask questions about uploaded materials and view personal chat history."),
+        ["Lecturer"] = ("accent", "♧", "Upload, manage, and edit teaching materials."),
+        ["Admin"] = ("light", "◇", "Full system administration and account management.")
     };
 }
 
 <div class="admin-page">
     <div class="admin-page-header">
         <div>
-            <div class="admin-kicker">Access · Roles</div>
-            <h1>Phân <span class="admin-serif">quyền</span></h1>
-            <p>Các vai trò trong hệ thống và phạm vi quyền hạn tương ứng.</p>
+            <div class="admin-kicker"><span data-i18n="admin.roles.permissions">Access</span> · <span data-i18n="admin.sidebar.roleManagement">Roles</span></div>
+            <h1><span data-i18n="admin.roles.title">Role</span> <span class="admin-serif" data-i18n="admin.roles.titleSerif">Management</span></h1>
+            <p data-i18n="admin.roles.subtitle">System roles and their corresponding permission scopes.</p>
         </div>
     </div>
 
@@ -26,18 +26,34 @@
                 ? value
                 : (Tone: "accent", Icon: "◇", Description: "Role permissions");
 
+            var roleNameKey = role.RoleName switch
+            {
+                "Student" => "admin.roles.student",
+                "Lecturer" => "admin.roles.lecturer",
+                "Admin" => "admin.roles.admin",
+                _ => ""
+            };
+
+            var descKey = role.RoleName switch
+            {
+                "Student" => "admin.roles.studentDesc",
+                "Lecturer" => "admin.roles.lecturerDesc",
+                "Admin" => "admin.roles.adminDesc",
+                _ => ""
+            };
+
             <section class="admin-card role-card @meta.Tone">
                 <div class="role-card-top">
                     <span class="role-icon" aria-hidden="true">@meta.Icon</span>
                     <div>
                         <strong>@role.Permissions.Count</strong>
-                        <small>Permissions</small>
+                        <small data-i18n="admin.roles.permissions">Permissions</small>
                     </div>
                 </div>
-                <h2>@role.RoleName</h2>
-                <p>@meta.Description</p>
+                <h2><span data-i18n="@roleNameKey">@role.RoleName</span></h2>
+                <p data-i18n="@descKey">@meta.Description</p>
                 <div class="permission-block">
-                    <div class="permission-title">Permissions</div>
+                    <div class="permission-title" data-i18n="admin.roles.permissions">Permissions</div>
                     <ul class="permission-list">
                         @foreach (var permission in role.Permissions)
                         {

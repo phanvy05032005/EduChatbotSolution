@@ -12,7 +12,7 @@
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -60,42 +60,42 @@
             <nav class="admin-menu">
                 <a asp-controller="Admin" asp-action="Dashboard" class="admin-link @(currentAction == "Dashboard" ? "active" : "")">
                     <span class="admin-menu-icon">▦</span>
-                    <span>Dashboard</span>
+                    <span data-i18n="admin.sidebar.dashboard">Dashboard</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Students" class="admin-link @(currentAction == "Students" ? "active" : "")">
                     <span class="admin-menu-icon">♙</span>
-                    <span>Student Accounts</span>
+                    <span data-i18n="admin.sidebar.studentAccounts">Student Accounts</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Lecturers" class="admin-link @(currentAction == "Lecturers" ? "active" : "")">
                     <span class="admin-menu-icon">♧</span>
-                    <span>Lecturer Accounts</span>
+                    <span data-i18n="admin.sidebar.lecturerAccounts">Lecturer Accounts</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Courses" class="admin-link @(currentAction == "Courses" ? "active" : "")">
                     <span class="admin-menu-icon">📚</span>
-                    <span>Môn học & Phân công</span>
+                    <span data-i18n="admin.sidebar.coursesAssignments">Courses &amp; Assignments</span>
                 </a>
                 <a asp-controller="Admin" asp-action="PendingDocuments" class="admin-link @(currentAction == "PendingDocuments" ? "active" : "")">
                     <span class="admin-menu-icon">□</span>
-                    <span>Pending Review</span>
+                    <span data-i18n="admin.sidebar.pendingReview">Pending Review</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Roles" class="admin-link @(currentAction == "Roles" ? "active" : "")">
                     <span class="admin-menu-icon">◇</span>
-                    <span>Role Management</span>
+                    <span data-i18n="admin.sidebar.roleManagement">Role Management</span>
                 </a>
                 <a asp-controller="Admin" asp-action="System" class="admin-link @(currentAction == "System" ? "active" : "")">
                     <span class="admin-menu-icon">▭</span>
-                    <span>System Management</span>
+                    <span data-i18n="admin.sidebar.systemManagement">System Management</span>
                 </a>
                 <a asp-controller="Admin" asp-action="Statistics" class="admin-link @(currentAction == "Statistics" ? "active" : "")">
                     <span class="admin-menu-icon">▥</span>
-                    <span>Statistics</span>
+                    <span data-i18n="admin.sidebar.statistics">Statistics</span>
                 </a>
             </nav>
             <form asp-controller="Account" asp-action="Logout" method="post" class="admin-logout">
                 @Html.AntiForgeryToken()
                 <button type="submit">
                     <span class="admin-menu-icon">↳</span>
-                    <span>Logout</span>
+                    <span data-i18n="admin.sidebar.logout">Logout</span>
                 </button>
             </form>
         </aside>
@@ -107,6 +107,7 @@
                     <strong>@ViewData["Title"]</strong>
                 </div>
                 <div class="admin-user-wrap">
+                    <button type="button" class="lang-toggle-btn" onclick="EduI18n.toggle()" title="Switch language" style="background: rgba(228,240,246,0.08); border: 1px solid rgba(228,240,246,0.15); color: #e4f0f6; border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; margin-right: 1rem;">VI</button>
                     <div class="admin-user">
                         <span aria-hidden="true"></span>
                         @User.Identity?.Name
@@ -134,14 +135,14 @@ else
                     </div>
                 </div>
                 <nav class="role-menu">
-                    <a asp-controller="Documents" asp-action="Dashboard">Dashboard</a>
-                    <a asp-controller="Documents" asp-action="Index">Learning Materials</a>
-                    <a asp-controller="Documents" asp-action="Upload">Upload Document</a>
-                    <a asp-controller="Account" asp-action="Profile">Profile</a>
+                    <a asp-controller="Documents" asp-action="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
+                    <a asp-controller="Documents" asp-action="Index" data-i18n="nav.learningMaterials">Learning Materials</a>
+                    <a asp-controller="Documents" asp-action="Upload" data-i18n="nav.uploadDocument">Upload Document</a>
+                    <a asp-controller="Account" asp-action="Profile" data-i18n="nav.profile">Profile</a>
                 </nav>
                 <form asp-controller="Account" asp-action="Logout" method="post" class="role-logout">
                     @Html.AntiForgeryToken()
-                    <button type="submit">Logout</button>
+                    <button type="submit" data-i18n="nav.logout">Logout</button>
                 </form>
             </aside>
             <div class="role-content">
@@ -150,7 +151,10 @@ else
                         <span>Academic Chatbot System</span>
                         <strong>@ViewData["Title"]</strong>
                     </div>
-                    <div class="role-user">@User.Identity?.Name</div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <button type="button" class="lang-toggle-btn" onclick="EduI18n.toggle()" title="Switch language" style="background: rgba(0, 102, 204, 0.08); border: 1px solid rgba(0, 102, 204, 0.15); color: #0066cc; border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;">VI</button>
+                        <div class="role-user">@User.Identity?.Name</div>
+                    </div>
                 </header>
                 <main role="main" class="role-main">
                     @RenderBody()
@@ -173,26 +177,29 @@ else
                         @if (User.IsInRole("Student"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Chat" asp-action="Index">Chat</a>
+                                <a class="nav-link" asp-area="" asp-controller="Chat" asp-action="Index" data-i18n="nav.chat">Chat</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Account" asp-action="Profile">Profile</a>
+                                <a class="nav-link" asp-area="" asp-controller="Account" asp-action="Profile" data-i18n="nav.profile">Profile</a>
                             </li>
                         }
                         @if (User.IsInRole("Lecturer"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Dashboard">Dashboard</a>
+                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Index">Documents</a>
+                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Index" data-i18n="nav.learningMaterials">Documents</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Upload">Upload</a>
+                                <a class="nav-link" asp-area="" asp-controller="Documents" asp-action="Upload" data-i18n="nav.uploadDocument">Upload</a>
                             </li>
                         }
                     </ul>
                     <ul class="navbar-nav">
+                        <li class="nav-item d-flex align-items-center me-3">
+                            <button type="button" class="lang-toggle-btn btn btn-sm btn-outline-secondary" onclick="EduI18n.toggle()" title="Switch language" style="font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.5rem; letter-spacing: 0.5px;">VI</button>
+                        </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
@@ -201,17 +208,17 @@ else
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-link nav-link">Logout</button>
+                                    <button type="submit" class="btn btn-link nav-link" data-i18n="nav.logout">Logout</button>
                                 </form>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                                <a class="nav-link" asp-controller="Account" asp-action="Login" data-i18n="nav.login">Login</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
+                                <a class="nav-link" asp-controller="Account" asp-action="Register" data-i18n="nav.register">Register</a>
                             </li>
                         }
                     </ul>
@@ -229,6 +236,7 @@ else
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
