@@ -12,6 +12,7 @@
 *.dump
 *.bak
 *.backup
+database-backup/educhatbotdb.sql
 appsettings.Local.json
 appsettings.*.Local.json
 
@@ -498,4 +499,3 @@ $RECYCLE.BIN/
 
 # Email logs generated during development
 EduChatbot.MVC/email-logs/
-
